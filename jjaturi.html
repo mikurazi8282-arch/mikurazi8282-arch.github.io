@@ -280,7 +280,18 @@
         display:flex; flex-direction:column; overflow:hidden;
         padding:10px 14px calc(16px + env(safe-area-inset-bottom, 0px));
         background:var(--surface);
+        touch-action:none;
       }
+      html.locked, body.locked{ touch-action:none; }
+      .count-card.locked .keypad,
+      .count-card.locked .key-btn,
+      .count-card.locked .count-actions,
+      .count-card.locked .count-actions .btn,
+      .count-card.locked .lock-btn,
+      .count-card.locked .display-box,
+      .count-card.locked .guide{ touch-action:none; }
+      /* 번호 목록은 한 손가락 세로 스크롤만 허용 — pan-y는 핀치 줌을 허용하지 않아 줌은 그대로 막힌다 */
+      .count-card.locked .entries{ touch-action:pan-y; }
       /* 고정 중에는 긴 안내 문구를 접어 키패드와 정리 버튼 자리를 확보한다 */
       .count-card.locked .hint{ display:none; }
       .count-card.locked .count-head{ flex:0 0 auto; margin-bottom:8px; }
@@ -288,7 +299,7 @@
       .count-card.locked .display-box{ flex:1 1 auto; min-height:0; padding:10px 12px; }
       .count-card.locked .entries{ flex:1 1 auto; height:auto; min-height:44px; max-height:none; overflow-y:auto; overscroll-behavior-y:contain; }
       .count-card.locked .current-row{ flex:0 0 auto; margin-top:8px; padding-top:8px; }
-      .count-card.locked .keypad{ flex:0 0 auto; margin-top:8px; gap:7px; touch-action:manipulation; }
+      .count-card.locked .keypad{ flex:0 0 auto; margin-top:8px; gap:7px; touch-action:none; }
       .count-card.locked .key-btn{ height:52px; min-height:52px; }
       .count-card.locked .count-actions{ flex:0 0 auto; margin-top:8px; }
       .count-card.locked .count-actions .btn{ min-height:48px; }
@@ -881,6 +892,21 @@
         }
         window.addEventListener("resize", fitLockedHeight);
         window.addEventListener("orientationchange", function(){ setTimeout(fitLockedHeight, 60); });
+        // 고정 중 줌 차단용: viewport 메타 원래 값 보관
+        var viewportMeta = document.querySelector('meta[name="viewport"]');
+        var originalViewportContent = viewportMeta ? viewportMeta.getAttribute("content") : "";
+        function applyZoomLock(on){
+          if (!viewportMeta) return;
+          if (on){
+            // 고정 중에는 maximum-scale / user-scalable로도 줌을 막는다 (보조 수단)
+            var base = originalViewportContent || "width=device-width, initial-scale=1, viewport-fit=cover";
+            // 기존 maximum-scale / user-scalable가 있으면 제거하고 새로 붙인다
+            base = base.replace(/,?\s*maximum-scale=[^,]*/gi, "").replace(/,?\s*user-scalable=[^,]*/gi, "");
+            viewportMeta.setAttribute("content", base + ", maximum-scale=1, user-scalable=no");
+          } else {
+            if (originalViewportContent) viewportMeta.setAttribute("content", originalViewportContent);
+          }
+        }
         function setLocked(on){
           isLocked = on;
           if (on){
@@ -889,6 +915,7 @@
             fitLockedHeight();
             document.documentElement.classList.add("locked");
             document.body.classList.add("locked");
+            applyZoomLock(true);
             lockBtn.textContent = "고정 풀기";
             lockBtn.setAttribute("aria-pressed", "true");
             if (window.requestAnimationFrame){
@@ -901,6 +928,7 @@
             countCard.style.removeProperty("--locked-h");
             document.documentElement.classList.remove("locked");
             document.body.classList.remove("locked");
+            applyZoomLock(false);
             lockBtn.textContent = "화면 고정";
             lockBtn.setAttribute("aria-pressed", "false");
             window.scrollTo(0, savedScrollY);
@@ -909,6 +937,77 @@
         if (lockBtn && countCard){
           lockBtn.addEventListener("click", function(){ setLocked(!isLocked); });
         }
+        // ---- 고정 중에만 확대/축소 차단 (해제하면 원래대로) ----
+        // 1) 두 손가락 핀치: touchmove에서 touches 2개 이상이면 막는다.
+        //    한 손가락 스크롤/탭은 막지 않아 키패드·목록 스크롤은 그대로 동작한다.
+        document.addEventListener("touchmove", function(e){
+          if (!isLocked) return;
+          if (e.touches && e.touches.length >= 2){
+            if (e.cancelable) e.preventDefault();
+          }
+        }, { passive: false });
+        // 두 손가락 터치가 시작되는 순간도 막아 핀치 시작 자체를 차단
+        document.addEventListener("touchstart", function(e){
+          if (!isLocked) return;
+          if (e.touches && e.touches.length >= 2){
+            if (e.cancelable) e.preventDefault();
+          }
+        }, { passive: false });
+        // 2) iOS 사파리 전용 제스처 이벤트
+        document.addEventListener("gesturestart", function(e){
+          if (!isLocked) return;
+          if (e.cancelable) e.preventDefault();
+        }, { passive: false });
+        document.addEventListener("gesturechange", function(e){
+          if (!isLocked) return;
+          if (e.cancelable) e.preventDefault();
+        }, { passive: false });
+        document.addEventListener("gestureend", function(e){
+          if (!isLocked) return;
+          if (e.cancelable) e.preventDefault();
+        }, { passive: false });
+        // 3) 데스크톱 Ctrl+휠 줌 (트랙패드 핀치도 ctrlKey 휠로 들어온다)
+        document.addEventListener("wheel", function(e){
+          if (!isLocked) return;
+          if (e.ctrlKey){
+            if (e.cancelable) e.preventDefault();
+          }
+        }, { passive: false });
+        // Ctrl + +/-/0 키보드 줌도 고정 중에만 막는다
+        document.addEventListener("keydown", function(e){
+          if (!isLocked) return;
+          if ((e.ctrlKey || e.metaKey) && (e.key === "+" || e.key === "-" || e.key === "=" || e.key === "0")){
+            e.preventDefault();
+          }
+        });
+        // 4) 두 번 연속 탭(더블탭) 줌 차단 — 키패드는 pointerdown으로 이미 입력되므로
+        //    touchend의 preventDefault가 숫자 입력과 충돌하지 않는다.
+        //    고정 해제 버튼(고정 풀기) 한 번 탭은 간격이 길어 막히지 않는다.
+        var lastTouchEndAt = 0;
+        var lastTouchTarget = null;
+        document.addEventListener("touchend", function(e){
+          if (!isLocked) { lastTouchEndAt = 0; lastTouchTarget = null; return; }
+          var now = Date.now();
+          // 같은 대상을 짧은 간격으로 다시 탭했을 때만 더블탭으로 본다.
+          // 다른 버튼(예: 숫자 → 정리)으로 빠르게 이동한 탭은 더블탭 줌이 아니므로 막지 않는다.
+          var sameTarget = !!(e.target && lastTouchTarget && e.target === lastTouchTarget);
+          var isDoubleTap = sameTarget && (now - lastTouchEndAt) > 0 && (now - lastTouchEndAt) <= 350;
+          // 탭 대상이 고정 풀기 버튼이면 더블탭 판정에서 제외해 해제가 씹히지 않게 한다
+          var onLockBtn = false;
+          try { onLockBtn = !!(e.target && lockBtn && (e.target === lockBtn || (e.target.closest && e.target.closest("#lockBtn")))); } catch(_e){}
+          // 정리/모두 지우기처럼 click으로 동작하는 버튼도 제외 — 키패드(pointerdown)만 막아도 줌은 차단된다
+          var onClickBtn = false;
+          try { onClickBtn = !!(e.target && e.target.closest && e.target.closest(".count-actions")); } catch(_e){}
+          if (isDoubleTap && !onLockBtn && !onClickBtn){
+            if (e.cancelable) e.preventDefault();
+          }
+          lastTouchEndAt = now;
+          lastTouchTarget = e.target || null;
+        }, { passive: false });
+        document.addEventListener("dblclick", function(e){
+          if (!isLocked) return;
+          if (e.cancelable) e.preventDefault();
+        }, { passive: false });
         document.addEventListener("keydown", function(e){
           if (e.key === "Escape" && isLocked) setLocked(false);
         });
