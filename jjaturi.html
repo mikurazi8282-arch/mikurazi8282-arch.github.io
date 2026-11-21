@@ -305,7 +305,7 @@
         <p class="hint">먼저 내 장소 이름을 적어 주세요</p>
         <label class="name-label" for="myNameTop">장소 이름</label>
         <input type="text" id="myNameTop" placeholder="예: 인천5, 계양, 김포" autocomplete="off" />
-        <p class="name-note">이 이름으로 아래 취합 현황과 방에 표시돼요. 취합하기 전에 꼭 먼저 적어 주세요.</p>
+        <p class="name-note">아래에서는 내곳-이 이름으로 표시돼요. 취합하기 전에 꼭 먼저 적어 주세요.</p>
       </section>
 
       <section class="card count-card" id="countCard" aria-label="세는 모드">
@@ -355,7 +355,7 @@
       </section>
 
       <section class="card" aria-label="내 장소 입력">
-        <h2>내 장소</h2>
+        <h2 id="myPlaceTitle">내곳</h2>
         <p class="hint">숫자를 넣으면 방에 자동으로 올라가요. 신선은 개수보다 클 수 없어요.</p>
         <label class="name-label" for="myName">장소 이름</label>
         <input type="text" id="myName" placeholder="예: 계양" autocomplete="off" />
@@ -596,6 +596,15 @@
           return n;
         }
 
+        function myDisplayName(){
+          var raw = (nameEl && nameEl.value ? nameEl.value : "").trim();
+          return raw ? "내곳-" + raw : "내곳";
+        }
+        function updateMyPlaceTitle(){
+          var titleEl = $("myPlaceTitle");
+          if (titleEl) titleEl.textContent = myDisplayName();
+        }
+
         function onInput(){
           readInputs();
           lsSet(LS.nums, JSON.stringify({ counts: myCounts, fresh: myFresh }));
@@ -605,6 +614,7 @@
         }
 
         function refreshMine(){
+          updateMyPlaceTitle();
           var err = hasError();
           totalEl.textContent = myTotal();
           var ft = myFreshTotal();
@@ -945,14 +955,45 @@
         }
 
         function renderBoard(){
+          updateMyPlaceTitle();
           boardEl.innerHTML = "";
           var keys = Object.keys(places).filter(function(k){ return k !== deviceId; });
           // 내 장소는 방 데이터에 없을 수 있으니(업로드 전) 합산에는 항상 내 현재 입력 사용
           var allNums = [];
           keys.forEach(function(k){ allNums.push(places[k].nums); });
           var mineInRoom = roomCode && places[deviceId];
-          if (!mineInRoom) allNums.push(myNums14());
-          else allNums.push(places[deviceId].nums);
+          var mineNums = mineInRoom ? places[deviceId].nums : myNums14();
+          allNums.push(mineNums);
+
+          // 내 장소 카드 — 표시는 "내곳-이름" (이름이 없으면 "내곳")
+          (function(){
+            var card = document.createElement("div");
+            card.className = "pcard mine";
+            var nm = document.createElement("div");
+            nm.className = "pname";
+            nm.textContent = myDisplayName();
+            var tt = document.createElement("div");
+            tt.className = "ptotal";
+            tt.textContent = mineNums[0] + "개";
+            card.appendChild(nm); card.appendChild(tt);
+            if (mineNums[6] > 0){
+              var fr = document.createElement("div");
+              fr.className = "pfresh";
+              fr.textContent = "신선 " + mineNums[6] + "개 포함";
+              card.appendChild(fr);
+            }
+            var items = placeSummaryList(mineNums);
+            if (items.length){
+              var ul = document.createElement("ul");
+              items.forEach(function(t){
+                var li = document.createElement("li");
+                li.textContent = t;
+                ul.appendChild(li);
+              });
+              card.appendChild(ul);
+            }
+            boardEl.appendChild(card);
+          })();
 
           keys.forEach(function(k){
             var p = places[k];
