@@ -220,9 +220,15 @@
         border:1.5px solid var(--line); border-radius:12px; background:var(--surface-2);
         padding:12px; display:flex; flex-direction:column;
       }
+      /* 고정 안 한 상태: 고정 높이의 내부 스크롤 상자로 만들지 않는다.
+         칩 줄 수만큼 자연스럽게 늘어나 페이지 스크롤과 함께 흘러가고,
+         내부 스크롤이 페이지 스크롤 제스처를 가로채지 않는다.
+         아주 많아질 때만 상한(max-height)에서 칩 영역만 내부 스크롤되며,
+         overscroll-behavior로 페이지와의 경계를 처리해 경계에서 씹히지 않게 한다. */
       .entries{
         display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start;
-        height:132px; min-height:84px; overflow-y:auto; overscroll-behavior:contain;
+        height:auto; min-height:48px; max-height:min(264px, 42vh);
+        overflow-y:auto; overscroll-behavior-y:contain;
         -webkit-overflow-scrolling:touch; scrollbar-width:thin;
       }
       .entries .empty-entries{ font-size:14px; color:var(--muted); line-height:1.5; padding:4px 2px; }
@@ -247,19 +253,20 @@
       .count-badge{ margin-left:auto; font-size:13.5px; font-weight:700; color:var(--muted); text-align:right; white-space:nowrap; flex:0 1 auto; }
       .count-badge strong{ color:var(--text); font-size:15px; }
       .count-badge .f{ color:var(--green); }
-      .keypad{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:14px; width:100%; }
+      .keypad{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:14px; width:100%; touch-action:manipulation; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
       .key-btn{
         min-height:58px; height:58px; max-height:64px; font-size:23px; font-weight:800; border-radius:12px;
         border:1px solid var(--line); background:var(--surface); color:var(--text);
         cursor:pointer; padding:8px 4px; -webkit-tap-highlight-color:transparent;
+        touch-action:manipulation; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
       }
-      .key-btn:active{ background:var(--blue-soft); border-color:var(--blue); color:var(--blue); }
+      .key-btn:active, .key-btn.pressed{ background:var(--blue-soft); border-color:var(--blue); color:var(--blue); }
       .key-btn.fresh-key{ font-size:17px; color:var(--green); border-color:var(--green); font-weight:900; }
       .key-btn.fresh-key.on{ background:var(--green); color:#fff; border-color:var(--green); }
-      .key-btn.fresh-key:active{ background:var(--green); color:#fff; }
+      .key-btn.fresh-key:active, .key-btn.fresh-key.pressed{ background:var(--green); color:#fff; }
       .key-btn.del-key{ font-size:16px; font-weight:800; color:var(--muted); }
-      .count-actions{ display:grid; grid-template-columns:1fr 1.5fr; gap:8px; margin-top:10px; }
-      .count-actions .btn{ min-height:50px; font-size:16px; }
+      .count-actions{ display:grid; grid-template-columns:1fr 1.5fr; gap:8px; margin-top:10px; touch-action:manipulation; }
+      .count-actions .btn{ min-height:50px; font-size:16px; touch-action:manipulation; }
       /* 화면 고정 모드: 세는 모드 전체가 한 화면에 고정.
          높이는 브라우저 도구 모음이 떠 있는 상태의 가장 작은 높이(100svh)를 기준으로 잡는다.
          100dvh로 잡으면 도구 모음 뒤로 하단이 들어가 마지막 버튼 줄이 잘린다.
@@ -279,10 +286,10 @@
       .count-card.locked .count-head{ flex:0 0 auto; margin-bottom:8px; }
       .count-card.locked .guide{ flex:0 0 auto; margin-bottom:8px; padding:7px 12px; line-height:1.5; font-size:13.5px; }
       .count-card.locked .display-box{ flex:1 1 auto; min-height:0; padding:10px 12px; }
-      .count-card.locked .entries{ flex:1 1 auto; height:auto; min-height:44px; }
+      .count-card.locked .entries{ flex:1 1 auto; height:auto; min-height:44px; max-height:none; overflow-y:auto; overscroll-behavior-y:contain; }
       .count-card.locked .current-row{ flex:0 0 auto; margin-top:8px; padding-top:8px; }
-      .count-card.locked .keypad{ flex:0 0 auto; margin-top:8px; gap:7px; }
-      .count-card.locked .key-btn{ height:50px; min-height:50px; }
+      .count-card.locked .keypad{ flex:0 0 auto; margin-top:8px; gap:7px; touch-action:manipulation; }
+      .count-card.locked .key-btn{ height:52px; min-height:52px; }
       .count-card.locked .count-actions{ flex:0 0 auto; margin-top:8px; }
       .count-card.locked .count-actions .btn{ min-height:48px; }
       .count-card.locked .count-foot-hint{ display:none; }
@@ -291,7 +298,7 @@
         .count-card.locked{ padding-top:8px; padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px)); }
         .count-card.locked .guide{ line-height:1.35; padding:5px 12px; margin-bottom:6px; font-size:13px; }
         .count-card.locked .count-head{ margin-bottom:6px; }
-        .count-card.locked .key-btn{ height:45px; min-height:45px; font-size:21px; }
+        .count-card.locked .key-btn{ height:48px; min-height:48px; font-size:21px; }
         .count-card.locked .keypad{ margin-top:6px; gap:6px; }
         .count-card.locked .count-actions{ margin-top:6px; }
         .count-card.locked .count-actions .btn{ min-height:44px; }
@@ -299,7 +306,7 @@
       }
       @media (max-height:640px){
         .count-card.locked .guide{ display:none; }
-        .count-card.locked .key-btn{ height:42px; min-height:42px; font-size:20px; }
+        .count-card.locked .key-btn{ height:48px; min-height:48px; font-size:20px; }
         .count-card.locked .key-btn.fresh-key{ font-size:15px; }
         .count-card.locked .key-btn.del-key{ font-size:14px; }
         .count-card.locked .count-actions .btn{ min-height:42px; font-size:15px; }
@@ -307,7 +314,7 @@
         .count-card.locked .current-value{ font-size:24px; }
       }
       @media (max-height:540px){
-        .count-card.locked .key-btn{ height:38px; min-height:38px; font-size:18px; }
+        .count-card.locked .key-btn{ height:48px; min-height:48px; font-size:18px; }
         .count-card.locked .count-actions .btn{ min-height:38px; }
         .count-card.locked .entries{ min-height:28px; }
         .count-card.locked .entry{ font-size:15px; padding:7px 8px; }
@@ -653,7 +660,21 @@
         // ---------- 세는 모드 ----------
         var entriesBox = $("entriesBox"), currentValueEl = $("currentValue"),
             countBadgeEl = $("countBadge"), freshBtn = $("freshBtn");
-        function renderCounting(){
+        // 키패드 버튼 DOM은 한 번 만든 뒤 절대 다시 그리지 않는다.
+        // 입력 때는 표시 영역(칩 목록·입력 중 숫자·총 개수)만 갱신해서,
+        // 빠르게 연타해도 그리는 도중의 탭이 사라지지 않게 한다.
+        function makeEntryChip(e){
+          var chip = document.createElement("span");
+          chip.className = "entry" + (e.fresh ? " fresh" : "");
+          chip.textContent = e.code;
+          if (e.fresh){
+            var sm = document.createElement("small");
+            sm.textContent = "신선";
+            chip.appendChild(sm);
+          }
+          return chip;
+        }
+        function renderEntries(){
           entriesBox.innerHTML = "";
           if (!entries.length){
             var empty = document.createElement("span");
@@ -661,18 +682,24 @@
             empty.textContent = "아직 넣은 번호가 없어요. 키패드로 3자리를 눌러보세요.";
             entriesBox.appendChild(empty);
           } else {
-            entries.forEach(function(e){
-              var chip = document.createElement("span");
-              chip.className = "entry" + (e.fresh ? " fresh" : "");
-              chip.textContent = e.code;
-              if (e.fresh){
-                var sm = document.createElement("small");
-                sm.textContent = "신선";
-                chip.appendChild(sm);
-              }
-              entriesBox.appendChild(chip);
-            });
+            entries.forEach(function(e){ entriesBox.appendChild(makeEntryChip(e)); });
           }
+          scrollEntriesToEnd();
+        }
+        function appendEntryChip(e){
+          var emptyEl = entriesBox.querySelector(".empty-entries");
+          if (emptyEl) entriesBox.innerHTML = "";
+          entriesBox.appendChild(makeEntryChip(e));
+          scrollEntriesToEnd();
+        }
+        function scrollEntriesToEnd(){
+          if (window.requestAnimationFrame){
+            requestAnimationFrame(function(){ entriesBox.scrollTop = entriesBox.scrollHeight; });
+          } else {
+            entriesBox.scrollTop = entriesBox.scrollHeight;
+          }
+        }
+        function renderTyping(){
           // 입력 중 표시: 3칸 중 채워진 자리만 파랗게, 나머지는 흐리게
           currentValueEl.innerHTML = "";
           for (var i = 0; i < 3; i++){
@@ -681,7 +708,8 @@
             else { s.textContent = "_"; s.className = "dim"; }
             currentValueEl.appendChild(s);
           }
-          var freshCount = entries.filter(function(e){ return e.fresh; }).length;
+          var freshCount = 0;
+          for (var j = 0; j < entries.length; j++) if (entries[j].fresh) freshCount++;
           countBadgeEl.innerHTML = "";
           var strong = document.createElement("strong");
           strong.textContent = "총 " + entries.length + "개";
@@ -694,42 +722,53 @@
           }
           var lastFresh = entries.length && entries[entries.length - 1].fresh;
           if (freshBtn) freshBtn.classList.toggle("on", !!lastFresh);
-          // 목록은 상자 안에서만 스크롤: 레이아웃이 확정된 뒤 최신 번호가 보이게 내리고, 키패드 위치는 그대로 둔다
-          if (window.requestAnimationFrame){
-            requestAnimationFrame(function(){ entriesBox.scrollTop = entriesBox.scrollHeight; });
-          } else {
-            entriesBox.scrollTop = entriesBox.scrollHeight;
-          }
+        }
+        function renderCounting(){
+          renderEntries();
+          renderTyping();
         }
         function pressDigit(d){
           if (typing.length >= 3) typing = "";
           typing += d;
           if (typing.length === 3){
-            entries.push({ code: typing, fresh: false });
+            var done = { code: typing, fresh: false };
+            entries.push(done);
             typing = "";
+            saveEntries();
+            appendEntryChip(done);
+            renderTyping();
+          } else {
+            // 3자리가 되기 전에는 칩 목록을 건드리지 않고 입력 중 표시만 갱신
+            lsSet(LS.typing, typing);
+            renderTyping();
           }
-          saveEntries();
-          renderCounting();
         }
         function pressDelete(){
           if (typing.length){
             typing = typing.slice(0, -1);
+            lsSet(LS.typing, typing);
+            renderTyping();
           } else if (entries.length){
             // 입력 중이 비어 있으면 마지막으로 넣은 번호를 되돌려서 한 자리 지운다
             var last = entries.pop();
             typing = last.code.slice(0, -1);
+            saveEntries();
+            renderEntries();
+            renderTyping();
           } else {
             return;
           }
-          saveEntries();
-          renderCounting();
         }
         function toggleFresh(){
           if (!entries.length){ toast("먼저 번호를 넣어주세요"); return; }
           var last = entries[entries.length - 1];
           last.fresh = !last.fresh;
           saveEntries();
-          renderCounting();
+          // 마지막 칩만 갈아끼우고 나머지는 그대로 둔다
+          var chips = entriesBox.querySelectorAll(".entry");
+          var lastChip = chips[chips.length - 1];
+          if (lastChip) entriesBox.replaceChild(makeEntryChip(last), lastChip);
+          renderTyping();
         }
         function clearAllEntries(){
           if (!entries.length && !typing){ toast("지울 번호가 없어요"); return; }
@@ -760,17 +799,57 @@
           renderBoard();
           toast("정리했어요 · 총 " + entries.length + "개");
         }
+        // 키패드는 click이 아니라 pointerdown에서 즉시 반응한다.
+        // 손을 떼기까지 기다리지 않아 빠르게 연타해도 먹는다.
+        // pointerdown 뒤에 따라오는 click은 중복 입력으로 보고 버린다.
+        var lastFastTap = { btn: null, at: 0 };
+        function shouldSkipClick(btn){
+          var now = Date.now();
+          return lastFastTap.btn === btn && (now - lastFastTap.at) < 700;
+        }
+        function bindFastTap(btn, handler){
+          if (!btn) return;
+          function fire(ev){
+            // 스크롤 제스처로 새거나 포커스 점프·합성 마우스 이벤트가 생기지 않게 막는다
+            if (ev && ev.cancelable) ev.preventDefault();
+            lastFastTap.btn = btn; lastFastTap.at = Date.now();
+            btn.classList.add("pressed");
+            handler();
+          }
+          if (window.PointerEvent){
+            btn.addEventListener("pointerdown", fire, { passive: false });
+          } else {
+            // PointerEvent가 없는 오래된 아이폰 사파리용: touchstart로 즉시 반응
+            btn.addEventListener("touchstart", fire, { passive: false });
+            btn.addEventListener("touchend", function(){ btn.classList.remove("pressed"); });
+          }
+          btn.addEventListener("pointerup", function(){ btn.classList.remove("pressed"); });
+          btn.addEventListener("pointercancel", function(){ btn.classList.remove("pressed"); });
+          btn.addEventListener("pointerleave", function(){ btn.classList.remove("pressed"); });
+          btn.addEventListener("click", function(ev){
+            if (shouldSkipClick(btn)){ ev.preventDefault(); return; }
+            // pointerdown을 못 받는 오래된 브라우저용 폴백
+            handler();
+          });
+          // 길게 눌렀을 때 메뉴/선택이 뜨지 않게
+          btn.addEventListener("contextmenu", function(ev){ ev.preventDefault(); });
+        }
         var keypadEl = $("keypad");
         if (keypadEl){
-          keypadEl.addEventListener("click", function(ev){
-            var btn = ev.target.closest ? ev.target.closest("button") : null;
-            if (!btn) return;
-            if (btn.dataset && btn.dataset.digit != null){ pressDigit(btn.dataset.digit); }
-          });
+          var digitBtns = keypadEl.querySelectorAll("button[data-digit]");
+          for (var dbi = 0; dbi < digitBtns.length; dbi++){
+            (function(btn){
+              bindFastTap(btn, function(){ pressDigit(btn.dataset.digit); });
+            })(digitBtns[dbi]);
+          }
+          // 키패드 영역에서 시작하는 터치가 페이지 스크롤로 새지 않게 한 번 더 막는다
+          keypadEl.addEventListener("touchmove", function(ev){
+            if (ev.target && ev.target.closest && ev.target.closest(".key-btn")) ev.preventDefault();
+          }, { passive: false });
         }
-        if (freshBtn) freshBtn.addEventListener("click", toggleFresh);
+        bindFastTap(freshBtn, toggleFresh);
         var delBtn = $("delBtn");
-        if (delBtn) delBtn.addEventListener("click", pressDelete);
+        bindFastTap(delBtn, pressDelete);
         var clearBtn = $("clearAllBtn");
         if (clearBtn) clearBtn.addEventListener("click", clearAllEntries);
         var tallyBtn = $("tallyBtn");
@@ -834,7 +913,8 @@
           if (e.key === "Escape" && isLocked) setLocked(false);
         });
         // 버튼이 포커스를 받으면서 브라우저가 화면을 끌어올리는 것 방지 (클릭 동작은 유지)
-        var noFocusJump = document.querySelectorAll(".key-btn, .count-actions .btn, .lock-btn");
+        // 키패드 버튼(.key-btn)은 pointerdown 핸들러가 이미 preventDefault로 처리하므로 제외한다
+        var noFocusJump = document.querySelectorAll(".count-actions .btn, .lock-btn");
         for (var nf = 0; nf < noFocusJump.length; nf++){
           noFocusJump[nf].addEventListener("mousedown", function(e){ e.preventDefault(); });
         }
