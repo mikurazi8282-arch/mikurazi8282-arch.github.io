@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1976D2" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="짜투리 정리기" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>인천 짜투리 정리기 웹</title>
+    <style>
+      :root{
+        --blue:#1976D2;
+        --blue-dark:#1565C0;
+        --blue-soft:#E3F0FB;
+        --green:#2E7D32;
+        --red:#C62828;
+        --bg:#ffffff;
+        --surface:#ffffff;
+        --surface-2:#F5F8FC;
+        --line:#D9E4F0;
+        --text:#17222E;
+        --muted:#5B6B7B;
+        --input-bg:#ffffff;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark){
+        :root{
+          --bg:#10161D;
+          --surface:#18222D;
+          --surface-2:#1D2937;
+          --line:#2E4257;
+          --text:#EAF1F8;
+          --muted:#9DB0C3;
+          --blue-soft:#14304F;
+          --input-bg:#10161D;
+          color-scheme: dark;
+        }
+      }
+      *{ box-sizing:border-box; }
+      html,body{ margin:0; padding:0; }
+      body{
+        background:var(--bg);
+        color:var(--text);
+        font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+        -webkit-text-size-adjust:100%;
+      }
+      button, input{ font:inherit; }
+      button, [role="button"], select, summary, input:not([type="checkbox"],[type="radio"]) { min-height:2.75rem; }
+
+      header{
+        background:var(--blue);
+        color:#fff;
+        padding:14px 16px calc(14px + env(safe-area-inset-bottom, 0px) * 0);
+        position:sticky; top:0; z-index:20;
+      }
+      header h1{ margin:0; font-size:19px; font-weight:700; letter-spacing:-.02em; }
+      header p{ margin:3px 0 0; font-size:13px; opacity:.88; }
+
+      main{ max-width:760px; margin:0 auto; padding:14px 14px 28px; }
+
+      .sharebar{
+        display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+        background:var(--surface-2); border:1px solid var(--line);
+        border-radius:14px; padding:12px;
+      }
+      .sharebar .status{ font-size:15px; font-weight:600; flex:1 1 160px; }
+      .sharebar .status .code{ color:var(--blue); font-weight:800; letter-spacing:.08em; }
+      .sharebar .sub{ display:block; font-size:12.5px; font-weight:400; color:var(--muted); margin-top:2px; }
+
+      .btn{
+        border:1px solid var(--blue); background:var(--blue); color:#fff;
+        border-radius:10px; padding:10px 16px; font-size:15px; font-weight:700;
+        cursor:pointer; min-height:44px;
+      }
+      .btn:active{ background:var(--blue-dark); }
+      .btn.ghost{ background:transparent; color:var(--blue); }
+      .btn.plain{ background:var(--surface); color:var(--text); border-color:var(--line); }
+      .btn.small{ min-height:40px; padding:7px 13px; font-size:14px; }
+
+      .card{
+        background:var(--surface); border:1px solid var(--line);
+        border-radius:16px; padding:16px; margin-top:14px;
+      }
+      .card h2{ margin:0 0 4px; font-size:17px; font-weight:800; letter-spacing:-.02em; }
+      .card .hint{ margin:0 0 12px; font-size:13px; color:var(--muted); }
+
+      label.name-label{ display:block; font-size:13px; font-weight:700; color:var(--muted); margin-bottom:6px; }
+      input[type="text"], input[type="tel"]{
+        width:100%; border:1.5px solid var(--line); border-radius:10px;
+        background:var(--input-bg); color:var(--text);
+        padding:10px 12px; font-size:17px;
+      }
+      input:focus{ outline:2px solid var(--blue); outline-offset:0; border-color:var(--blue); }
+
+      .rows{ margin-top:14px; display:flex; flex-direction:column; gap:10px; }
+      .srow{
+        display:grid; grid-template-columns:1fr 76px 76px; gap:8px; align-items:end;
+        background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:10px;
+      }
+      .srow .lab{ font-size:15px; font-weight:700; line-height:1.3; padding-bottom:10px; }
+      .srow .lab small{ display:block; font-size:12px; font-weight:500; color:var(--muted); }
+      .srow .cell label{ display:block; font-size:11.5px; font-weight:700; color:var(--muted); text-align:center; margin-bottom:4px; }
+      .srow .cell.fresh label{ color:var(--green); }
+      .srow input{
+        width:100%; text-align:center; font-size:19px; font-weight:700;
+        border:1.5px solid var(--line); border-radius:9px; padding:8px 4px;
+        background:var(--input-bg); color:var(--text);
+      }
+      .srow .cell.fresh input{ color:var(--green); }
+      .srow.err{ border-color:var(--red); }
+      .srow.err .cell.fresh input{ border-color:var(--red); color:var(--red); }
+
+      .totalbar{
+        margin-top:14px; display:flex; align-items:baseline; justify-content:space-between;
+        background:var(--blue-soft); border-radius:12px; padding:12px 14px;
+      }
+      .totalbar .t{ font-size:15px; font-weight:700; }
+      .totalbar .n{ font-size:24px; font-weight:800; color:var(--blue); }
+      .totalbar .n .fresh{ font-size:15px; color:var(--green); font-weight:700; }
+      .err-msg{ display:none; margin-top:10px; color:var(--red); font-size:14px; font-weight:600; }
+      .err-msg.show{ display:block; }
+      .sync-msg{ margin-top:8px; font-size:12.5px; color:var(--muted); min-height:16px; }
+
+      .board{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px; }
+      @media (max-width:380px){ .board{ grid-template-columns:1fr 1fr; gap:8px; } }
+      .pcard{
+        border:1px solid var(--line); border-radius:14px; padding:12px;
+        background:var(--surface); min-width:0;
+      }
+      .pcard .pname{ font-size:15px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .pcard .ptotal{ font-size:22px; font-weight:800; color:var(--blue); margin:2px 0 6px; }
+      .pcard .ptotal small{ font-size:13px; font-weight:700; }
+      .pcard .pfresh{ font-size:13px; color:var(--green); font-weight:700; }
+      .pcard ul{ list-style:none; margin:6px 0 0; padding:0; font-size:13px; color:var(--muted); line-height:1.55; }
+      .pcard.mine{ border-color:var(--blue); }
+      .pcard .tag{ display:inline-block; font-size:11px; font-weight:700; color:var(--blue); background:var(--blue-soft); border-radius:999px; padding:2px 8px; margin-left:6px; vertical-align:2px; }
+
+      .result-card{
+        grid-column:1 / -1;
+        border:2px solid var(--blue); background:var(--blue-soft);
+        border-radius:14px; padding:14px;
+      }
+      .result-card h3{ margin:0 0 8px; font-size:16px; font-weight:800; }
+      .result-card pre{
+        margin:0; font-family:inherit; font-size:15px; line-height:1.65;
+        white-space:pre-wrap; word-break:keep-all;
+      }
+      .result-card .copyrow{ margin-top:12px; display:flex; justify-content:flex-end; }
+      .empty-note{ grid-column:1 / -1; font-size:14px; color:var(--muted); text-align:center; padding:14px 4px; }
+
+      footer{ max-width:760px; margin:0 auto; padding:0 14px calc(22px + env(safe-area-inset-bottom, 0px)); }
+      footer p{ font-size:12.5px; color:var(--muted); line-height:1.6; margin:0; text-align:center; }
+
+      .overlay{
+        display:none; position:fixed; inset:0; background:rgba(10,20,32,.5);
+        z-index:50; align-items:center; justify-content:center; padding:20px;
+      }
+      .overlay.open{ display:flex; }
+      .dialog{
+        background:var(--surface); color:var(--text); border-radius:16px;
+        width:100%; max-width:360px; padding:20px;
+      }
+      .dialog h3{ margin:0 0 6px; font-size:17px; font-weight:800; }
+      .dialog p{ margin:0 0 14px; font-size:14px; color:var(--muted); line-height:1.5; }
+      .dialog input{
+        text-align:center; font-size:26px; font-weight:800; letter-spacing:.35em;
+      }
+      .dialog .btns{ display:flex; gap:8px; margin-top:14px; }
+      .dialog .btns .btn{ flex:1; }
+
+      .toast{
+        position:fixed; left:50%; bottom:calc(26px + env(safe-area-inset-bottom, 0px));
+        transform:translateX(-50%) translateY(20px);
+        background:#17222E; color:#fff; font-size:14.5px; font-weight:600;
+        padding:11px 18px; border-radius:999px; opacity:0; pointer-events:none;
+        transition:opacity .2s, transform .2s; z-index:60; max-width:88vw; text-align:center;
+      }
+      .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>인천 짜투리 정리기 웹 · 실시간 공유</h1>
+      <p>안드로이드 앱과 같은 방에서 함께 세는 웹 버전이에요</p>
+    </header>
+
+    <main>
+      <div class="sharebar" id="sharebar"></div>
+
+      <section class="card" aria-label="내 장소 입력">
+        <h2>내 장소</h2>
+        <p class="hint">숫자를 넣으면 방에 자동으로 올라가요. 신선은 개수보다 클 수 없어요.</p>
+        <label class="name-label" for="myName">장소 이름</label>
+        <input type="text" id="myName" placeholder="예: 계양" autocomplete="off" />
+        <div class="rows" id="rows"></div>
+        <div class="totalbar">
+          <span class="t">내 총 개수</span>
+          <span class="n"><span id="myTotal">0</span>개 <span class="fresh" id="myFresh"></span></span>
+        </div>
+        <p class="err-msg" id="errMsg">신선이 개수보다 많은 구간이 있어요. 고쳐야 방에 올라가요.</p>
+        <p class="sync-msg" id="syncMsg"></p>
+      </section>
+
+      <section class="card" aria-label="취합 현황">
+        <h2>취합 현황</h2>
+        <p class="hint" id="boardHint">방에 들어가면 다른 장소가 실시간으로 보여요.</p>
+        <div class="board" id="board"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p>아이폰에서는 사파리 공유 버튼 → <b>홈 화면에 추가</b>를 누르면 앱처럼 쓸 수 있어요.</p>
+    </footer>
+
+    <div class="overlay" id="joinOverlay" role="dialog" aria-modal="true" aria-label="코드로 참가">
+      <div class="dialog">
+        <h3>코드로 참가</h3>
+        <p>안드로이드 앱이나 다른 폰에서 만든 6자리 방 코드를 넣어주세요.</p>
+        <input type="tel" id="joinCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" />
+        <div class="btns">
+          <button class="btn plain" id="joinCancel" type="button">취소</button>
+          <button class="btn" id="joinOk" type="button">참가</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+    <script>
+      (function(){
+        "use strict";
+
+        // 구간 정의: 입력 6개 (개수/신선)
+        var SECTIONS = [
+          { label:"400번대 계양",        short:"400번대",   copy:"400번대 계양" },
+          { label:"500번대 계양",        short:"500번대",   copy:"500번대 계양", sub:"501~506" },
+          { label:"구)검단",             short:"구)검단",   copy:"구)검단",      sub:"507~514" },
+          { label:"김포",                short:"김포",      copy:"김포",         sub:"515~520" },
+          { label:"신)검단",             short:"신)검단",   copy:"신)검단",      sub:"521~528" },
+          { label:"기타",                short:"기타",      copy:"기타" }
+        ];
+        // nums 14개 순서: [총, 400, 500, 구검단, 김포, 신검단, 신선합계, 기타, 400신선, 500신선, 구검단신선, 김포신선, 신검단신선, 기타신선]
+        // 입력 인덱스(0~5: 400,500,구검단,김포,신검단,기타) → nums 위치
+        var COUNT_POS = [1, 2, 3, 4, 5, 7];
+        var FRESH_POS = [8, 9, 10, 11, 12, 13];
+
+        var LS = {
+          room: "jjaturi_room",
+          device: "jjaturi_device_id",
+          name: "jjaturi_my_name",
+          nums: "jjaturi_my_nums"
+        };
+
+        function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+        function lsSet(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
+        function lsDel(k){ try { localStorage.removeItem(k); } catch(e){} }
+
+        function makeDeviceId(){
+          var id = lsGet(LS.device);
+          if (!id){
+            id = "web-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+            lsSet(LS.device, id);
+          }
+          return id;
+        }
+        var deviceId = makeDeviceId();
+
+        // 내 입력 상태: counts[6], fresh[6]
+        var myCounts = [0,0,0,0,0,0];
+        var myFresh  = [0,0,0,0,0,0];
+        (function restoreNums(){
+          try {
+            var saved = JSON.parse(lsGet(LS.nums) || "null");
+            if (saved && saved.counts && saved.fresh){
+              for (var i = 0; i < 6; i++){
+                myCounts[i] = Math.max(0, parseInt(saved.counts[i], 10) || 0);
+                myFresh[i]  = Math.max(0, parseInt(saved.fresh[i], 10) || 0);
+              }
+            }
+          } catch(e){}
+        })();
+
+        var roomCode = lsGet(LS.room) || "";
+        var places = {}; // deviceId -> {name, nums[14]}
+        var roomRef = null, placesRef = null, placesListener = null;
+
+        // ---------- Firebase ----------
+        var db = null;
+        try {
+          if (window.firebase && firebase.initializeApp){
+            firebase.initializeApp({
+              apiKey: "AIzaSyDUmg8CPNRznQnfHSfB_2dB2sRPE81iEbE",
+              authDomain: "jjaturi.firebaseapp.com",
+              databaseURL: "https://jjaturi-default-rtdb.firebaseio.com",
+              projectId: "jjaturi",
+              appId: "1:326623525606:android:89869ab7baa41a5b015927"
+            });
+            db = firebase.database();
+          }
+        } catch(e){ db = null; }
+
+        // ---------- DOM ----------
+        var $ = function(id){ return document.getElementById(id); };
+        var sharebar = $("sharebar"), rowsEl = $("rows"), boardEl = $("board"),
+            nameEl = $("myName"), totalEl = $("myTotal"), freshEl = $("myFresh"),
+            errEl = $("errMsg"), syncEl = $("syncMsg"), boardHint = $("boardHint"),
+            toastEl = $("toast");
+
+        nameEl.value = lsGet(LS.name) || "";
+
+        var toastTimer = null;
+        function toast(msg){
+          toastEl.textContent = msg;
+          toastEl.classList.add("show");
+          clearTimeout(toastTimer);
+          toastTimer = setTimeout(function(){ toastEl.classList.remove("show"); }, 2400);
+        }
+
+        // 구간 입력 줄 만들기
+        var countInputs = [], freshInputs = [], rowEls = [];
+        SECTIONS.forEach(function(sec, i){
+          var row = document.createElement("div");
+          row.className = "srow";
+          var lab = document.createElement("div");
+          lab.className = "lab";
+          lab.textContent = sec.label;
+          if (sec.sub){
+            var sm = document.createElement("small");
+            sm.textContent = sec.sub;
+            lab.appendChild(sm);
+          }
+          var cCell = document.createElement("div"); cCell.className = "cell";
+          var cLab = document.createElement("label"); cLab.textContent = "개수";
+          var cIn = document.createElement("input");
+          cIn.type = "tel"; cIn.inputMode = "numeric"; cIn.setAttribute("aria-label", sec.label + " 개수");
+          cIn.value = myCounts[i] ? String(myCounts[i]) : "";
+          cIn.placeholder = "0";
+          cCell.appendChild(cLab); cCell.appendChild(cIn);
+
+          var fCell = document.createElement("div"); fCell.className = "cell fresh";
+          var fLab = document.createElement("label"); fLab.textContent = "신선";
+          var fIn = document.createElement("input");
+          fIn.type = "tel"; fIn.inputMode = "numeric"; fIn.setAttribute("aria-label", sec.label + " 신선");
+          fIn.value = myFresh[i] ? String(myFresh[i]) : "";
+          fIn.placeholder = "0";
+          fCell.appendChild(fLab); fCell.appendChild(fIn);
+
+          row.appendChild(lab); row.appendChild(cCell); row.appendChild(fCell);
+          rowsEl.appendChild(row);
+          countInputs.push(cIn); freshInputs.push(fIn); rowEls.push(row);
+
+          cIn.addEventListener("input", function(){ onInput(i); });
+          fIn.addEventListener("input", function(){ onInput(i); });
+        });
+
+        nameEl.addEventListener("input", function(){
+          lsSet(LS.name, nameEl.value);
+          scheduleUpload();
+          renderBoard();
+        });
+
+        function readInputs(){
+          for (var i = 0; i < 6; i++){
+            myCounts[i] = Math.max(0, parseInt(countInputs[i].value, 10) || 0);
+            myFresh[i]  = Math.max(0, parseInt(freshInputs[i].value, 10) || 0);
+          }
+        }
+        function hasError(){
+          for (var i = 0; i < 6; i++) if (myFresh[i] > myCounts[i]) return true;
+          return false;
+        }
+        function myTotal(){ return myCounts.reduce(function(a,b){ return a+b; }, 0); }
+        function myFreshTotal(){ return myFresh.reduce(function(a,b){ return a+b; }, 0); }
+
+        function myNums14(){
+          var n = [0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+          for (var i = 0; i < 6; i++){
+            n[COUNT_POS[i]] = myCounts[i];
+            n[FRESH_POS[i]] = myFresh[i];
+          }
+          n[6] = myFreshTotal();
+          n[0] = myTotal();
+          return n;
+        }
+
+        function onInput(){
+          readInputs();
+          lsSet(LS.nums, JSON.stringify({ counts: myCounts, fresh: myFresh }));
+          refreshMine();
+          scheduleUpload();
+          renderBoard();
+        }
+
+        function refreshMine(){
+          var err = hasError();
+          totalEl.textContent = myTotal();
+          var ft = myFreshTotal();
+          freshEl.textContent = ft > 0 ? "· 신선 " + ft + "개 포함" : "";
+          errEl.classList.toggle("show", err);
+          for (var i = 0; i < 6; i++){
+            rowEls[i].classList.toggle("err", myFresh[i] > myCounts[i]);
+          }
+        }
+
+        // ---------- 업로드 (0.5초 디바운스) ----------
+        var uploadTimer = null;
+        function scheduleUpload(){
+          if (!roomCode) { syncEl.textContent = ""; return; }
+          syncEl.textContent = "올리는 중…";
+          clearTimeout(uploadTimer);
+          uploadTimer = setTimeout(uploadNow, 500);
+        }
+        function uploadNow(){
+          if (!roomCode || !db) { if (!db && roomCode) syncEl.textContent = "연결이 안 돼서 올리지 못했어요."; return; }
+          if (hasError()){ syncEl.textContent = "신선 오류를 고치면 자동으로 올라가요."; return; }
+          var payload = {
+            name: nameEl.value.trim(),
+            nums: myNums14().join(","),
+            ts: Date.now()
+          };
+          db.ref("rooms/" + roomCode + "/places/" + deviceId).set(payload)
+            .then(function(){ syncEl.textContent = "방에 올렸어요 · " + new Date().toLocaleTimeString("ko-KR", { hour:"2-digit", minute:"2-digit", second:"2-digit" }); })
+            .catch(function(){ syncEl.textContent = "올리기에 실패했어요. 인터넷을 확인해 주세요."; });
+        }
+
+        // ---------- 방 ----------
+        function renderSharebar(){
+          sharebar.innerHTML = "";
+          if (!roomCode){
+            var s = document.createElement("span");
+            s.className = "status";
+            s.textContent = "아직 방에 안 들어갔어요";
+            var sub = document.createElement("span");
+            sub.className = "sub";
+            sub.textContent = "혼자 세는 중 — 방에 들어가면 앱과 실시간으로 합쳐져요";
+            s.appendChild(sub);
+            var b1 = document.createElement("button");
+            b1.className = "btn"; b1.type = "button"; b1.textContent = "방 만들기";
+            b1.addEventListener("click", createRoom);
+            var b2 = document.createElement("button");
+            b2.className = "btn ghost"; b2.type = "button"; b2.textContent = "코드로 참가";
+            b2.addEventListener("click", openJoin);
+            sharebar.appendChild(s); sharebar.appendChild(b1); sharebar.appendChild(b2);
+          } else {
+            var s2 = document.createElement("span");
+            s2.className = "status";
+            s2.innerHTML = "실시간 공유 중 · 방 코드 ";
+            var code = document.createElement("span");
+            code.className = "code"; code.textContent = roomCode;
+            s2.appendChild(code);
+            var b3 = document.createElement("button");
+            b3.className = "btn plain"; b3.type = "button"; b3.textContent = "나가기";
+            b3.addEventListener("click", leaveRoom);
+            sharebar.appendChild(s2); sharebar.appendChild(b3);
+          }
+          boardHint.textContent = roomCode
+            ? "다른 폰·앱에서 넣은 숫자가 실시간으로 반영돼요."
+            : "방에 들어가면 다른 장소가 실시간으로 보여요.";
+        }
+
+        function attachRoom(){
+          if (!db || !roomCode) return;
+          detachRoom();
+          placesRef = db.ref("rooms/" + roomCode + "/places");
+          placesListener = placesRef.on("value", function(snap){
+            places = {};
+            var val = snap.val() || {};
+            Object.keys(val).forEach(function(k){
+              var p = val[k] || {};
+              var arr = String(p.nums || "").split(",").map(function(x){ return parseInt(x, 10) || 0; });
+              while (arr.length < 14) arr.push(0);
+              places[k] = { name: p.name || "", nums: arr, ts: p.ts || 0 };
+            });
+            renderBoard();
+          }, function(){
+            syncEl.textContent = "방 정보를 받지 못했어요. 인터넷을 확인해 주세요.";
+          });
+        }
+        function detachRoom(){
+          if (placesRef && placesListener){ placesRef.off("value", placesListener); }
+          placesRef = null; placesListener = null;
+        }
+
+        function createRoom(){
+          if (!db){ toast("인터넷 연결을 확인해 주세요"); return; }
+          var code = String(Math.floor(100000 + Math.random() * 900000));
+          roomCode = code;
+          lsSet(LS.room, code);
+          db.ref("rooms/" + code + "/created").set(Date.now())
+            .then(function(){
+              attachRoom();
+              renderSharebar();
+              uploadNow();
+              renderBoard();
+              toast("방을 만들었어요 · 코드 " + code);
+            })
+            .catch(function(){ toast("방 만들기에 실패했어요"); });
+          renderSharebar();
+          renderBoard();
+        }
+
+        function joinRoom(code){
+          if (!db){ toast("인터넷 연결을 확인해 주세요"); return; }
+          db.ref("rooms/" + code).once("value").then(function(snap){
+            if (!snap.exists()){ toast("없는 방 코드예요"); return; }
+            roomCode = code;
+            lsSet(LS.room, code);
+            attachRoom();
+            renderSharebar();
+            uploadNow();
+            renderBoard();
+            toast("방에 들어갔어요 · 코드 " + code);
+          }).catch(function(){ toast("참가에 실패했어요. 인터넷을 확인해 주세요."); });
+        }
+
+        function leaveRoom(){
+          var code = roomCode;
+          detachRoom();
+          if (db && code){
+            db.ref("rooms/" + code + "/places/" + deviceId).remove().catch(function(){});
+          }
+          roomCode = "";
+          places = {};
+          lsDel(LS.room);
+          syncEl.textContent = "";
+          renderSharebar();
+          renderBoard();
+          toast("방에서 나왔어요");
+        }
+
+        // 참가 다이얼로그
+        var overlay = $("joinOverlay"), joinCodeEl = $("joinCode");
+        function openJoin(){
+          joinCodeEl.value = "";
+          overlay.classList.add("open");
+          setTimeout(function(){ joinCodeEl.focus(); }, 50);
+        }
+        function closeJoin(){ overlay.classList.remove("open"); }
+        $("joinCancel").addEventListener("click", closeJoin);
+        overlay.addEventListener("click", function(e){ if (e.target === overlay) closeJoin(); });
+        $("joinOk").addEventListener("click", function(){
+          var code = (joinCodeEl.value || "").replace(/\D/g, "");
+          if (code.length !== 6){ toast("6자리 코드를 넣어주세요"); return; }
+          closeJoin();
+          joinRoom(code);
+        });
+        joinCodeEl.addEventListener("keydown", function(e){
+          if (e.key === "Enter"){ $("joinOk").click(); }
+        });
+
+        // ---------- 현황 보드 ----------
+        function placeSummaryList(nums){
+          var items = [];
+          for (var i = 0; i < 6; i++){
+            var c = nums[COUNT_POS[i]], f = nums[FRESH_POS[i]];
+            if (c > 0) items.push(SECTIONS[i].short + " " + c + (f > 0 ? " (신선 " + f + ")" : ""));
+          }
+          return items;
+        }
+
+        function renderBoard(){
+          boardEl.innerHTML = "";
+          var keys = Object.keys(places).filter(function(k){ return k !== deviceId; });
+          // 내 장소는 방 데이터에 없을 수 있으니(업로드 전) 합산에는 항상 내 현재 입력 사용
+          var allNums = [];
+          keys.forEach(function(k){ allNums.push(places[k].nums); });
+          var mineInRoom = roomCode && places[deviceId];
+          if (!mineInRoom) allNums.push(myNums14());
+          else allNums.push(places[deviceId].nums);
+
+          keys.forEach(function(k){
+            var p = places[k];
+            var card = document.createElement("div");
+            card.className = "pcard";
+            var nm = document.createElement("div");
+            nm.className = "pname";
+            nm.textContent = p.name || "이름 없는 장소";
+            var tt = document.createElement("div");
+            tt.className = "ptotal";
+            tt.textContent = p.nums[0] + "개";
+            card.appendChild(nm); card.appendChild(tt);
+            if (p.nums[6] > 0){
+              var fr = document.createElement("div");
+              fr.className = "pfresh";
+              fr.textContent = "신선 " + p.nums[6] + "개 포함";
+              card.appendChild(fr);
+            }
+            var items = placeSummaryList(p.nums);
+            if (items.length){
+              var ul = document.createElement("ul");
+              items.forEach(function(t){
+                var li = document.createElement("li");
+                li.textContent = t;
+                ul.appendChild(li);
+              });
+              card.appendChild(ul);
+            }
+            boardEl.appendChild(card);
+          });
+
+          if (!roomCode && keys.length === 0){
+            var note = document.createElement("div");
+            note.className = "empty-note";
+            note.textContent = "아직 다른 장소가 없어요. 방을 만들거나 코드로 참가해 보세요.";
+            boardEl.appendChild(note);
+          }
+
+          // 결과 카드 (전 장소 합산)
+          var sum = [0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+          allNums.forEach(function(n){
+            for (var i = 0; i < 14; i++) sum[i] += n[i] || 0;
+          });
+          var rc = document.createElement("div");
+          rc.className = "result-card";
+          var h = document.createElement("h3");
+          h.textContent = "결과 · 전 장소 합산";
+          var pre = document.createElement("pre");
+          pre.textContent = formatResult(sum);
+          var row = document.createElement("div");
+          row.className = "copyrow";
+          var cb = document.createElement("button");
+          cb.className = "btn small"; cb.type = "button"; cb.textContent = "복사";
+          cb.addEventListener("click", function(){ copyText(formatResult(sum)); });
+          row.appendChild(cb);
+          rc.appendChild(h); rc.appendChild(pre); rc.appendChild(row);
+          boardEl.appendChild(rc);
+        }
+
+        // ---------- 복사 글 양식 (안드로이드 기본 양식) ----------
+        function dispWidth(s){
+          var w = 0;
+          for (var i = 0; i < s.length; i++){
+            w += (s.charCodeAt(i) > 127) ? 2 : 1;
+          }
+          return w;
+        }
+        function formatResult(n){
+          var lines = [];
+          lines.push("총 짜투리 개수 " + n[0] + "개");
+          var parts = [];
+          var maxW = 0;
+          for (var i = 0; i < 6; i++){
+            var c = n[COUNT_POS[i]], f = n[FRESH_POS[i]];
+            var left = SECTIONS[i].copy + (f > 0 ? " - 신선 " + f + "개 포함" : "");
+            parts.push({ left: left, count: c });
+            var w = dispWidth(left);
+            if (w > maxW) maxW = w;
+          }
+          parts.forEach(function(p){
+            var pad = "";
+            var need = maxW - dispWidth(p.left);
+            for (var j = 0; j < need; j++) pad += " ";
+            lines.push(p.left + pad + "  " + p.count + "개");
+          });
+          lines.push("신선 " + n[6] + "개");
+          return lines.join("\n");
+        }
+
+        function copyText(text){
+          function done(){ toast("복사했어요"); }
+          if (navigator.clipboard && navigator.clipboard.writeText){
+            navigator.clipboard.writeText(text).then(done).catch(function(){ fallback(); });
+          } else fallback();
+          function fallback(){
+            var ta = document.createElement("textarea");
+            ta.value = text;
+            ta.style.position = "fixed"; ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand("copy"); done(); }
+            catch(e){ toast("복사에 실패했어요"); }
+            document.body.removeChild(ta);
+          }
+        }
+
+        // ---------- 시작 ----------
+        refreshMine();
+        renderSharebar();
+        if (roomCode){
+          if (db){ attachRoom(); uploadNow(); }
+          else syncEl.textContent = "연결이 안 돼서 방 정보를 받지 못하고 있어요.";
+        }
+        renderBoard();
+      })();
+    </script>
+  </body>
+</html>
