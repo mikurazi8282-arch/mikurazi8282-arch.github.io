@@ -54,6 +54,12 @@
       button, input{ font:inherit; }
       button, [role="button"], select, summary, input:not([type="checkbox"],[type="radio"]) { min-height:2.75rem; }
       button, .btn, .key-btn{ touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+      /* 입력칸 위에서 시작한 세로 스크롤은 페이지 스크롤로 흘러가야 한다.
+         입력칸에 pan-y를 명시해 브라우저가 세로 드래그를 곧바로 페이지
+         스크롤로 판정하게 한다. 톡 탭하면 포커스는 그대로 들어간다. */
+      input, textarea, select{ touch-action:pan-y; }
+      /* 카드·안내 상자·보드처럼 핸들러 없는 영역도 세로 스크롤 판정을 명확히 한다 */
+      .card, .guide, .display-box, .board, .pcard, .sharebar, .rows, .srow, header{ touch-action:pan-y; }
       html{ scrollbar-gutter:stable; }
       html.locked, body.locked{ overflow:hidden !important; height:100dvh; height:100svh; overscroll-behavior:none; }
 
@@ -67,7 +73,11 @@
       header h1{ margin:0; font-size:19px; font-weight:700; letter-spacing:-.02em; }
       header p{ margin:3px 0 0; font-size:13px; opacity:.88; }
 
-      main{ width:100%; max-width:var(--phone-width); margin:0 auto; padding:14px 14px 28px; background:var(--bg); min-height:calc(100dvh - 120px); }
+      /* 최소 높이는 dvh가 아니라 svh로 잡는다. dvh는 스크롤 중 브라우저
+         도구 모음이 숨었다 나타날 때마다 값이 바뀌어 페이지 높이가
+         출렁이고 스크롤이 씹혀 보인다. svh는 도구 모음이 떠 있는
+         가장 작은 높이로 고정돼 스크롤 중에도 변하지 않는다. */
+      main{ width:100%; max-width:var(--phone-width); margin:0 auto; padding:14px 14px 28px; background:var(--bg); min-height:calc(100svh - 120px); }
       @media (min-width:520px){
         header{ box-shadow:0 1px 0 rgba(0,0,0,.06), 12px 0 24px -12px rgba(15,35,60,.18), -12px 0 24px -12px rgba(15,35,60,.18); }
         main, footer{ box-shadow:12px 0 24px -12px rgba(15,35,60,.18), -12px 0 24px -12px rgba(15,35,60,.18); }
@@ -220,16 +230,17 @@
         border:1.5px solid var(--line); border-radius:12px; background:var(--surface-2);
         padding:12px; display:flex; flex-direction:column;
       }
-      /* 고정 안 한 상태: 고정 높이의 내부 스크롤 상자로 만들지 않는다.
-         칩 줄 수만큼 자연스럽게 늘어나 페이지 스크롤과 함께 흘러가고,
-         내부 스크롤이 페이지 스크롤 제스처를 가로채지 않는다.
-         아주 많아질 때만 상한(max-height)에서 칩 영역만 내부 스크롤되며,
-         overscroll-behavior로 페이지와의 경계를 처리해 경계에서 씹히지 않게 한다. */
+      /* 고정 안 한 상태: 내부 스크롤 컨테이너를 아예 만들지 않는다.
+         이전에는 max-height + overflow-y:auto + overscroll-behavior:contain이
+         남아 있어, 목록 위에서 시작한 스크롤이 내부 상자에 갇히고
+         끝에 닿아도 contain이 페이지로의 스크롤 체이닝을 막아 씹혔다.
+         이제 칩 개수만큼 상자가 늘어나 페이지와 한 몸으로 흐르고,
+         내부 스크롤은 화면 고정 모드에서만 생긴다. */
       .entries{
         display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start;
-        height:auto; min-height:48px; max-height:min(264px, 42vh);
-        overflow-y:auto; overscroll-behavior-y:contain;
-        -webkit-overflow-scrolling:touch; scrollbar-width:thin;
+        height:auto; min-height:48px; max-height:none;
+        overflow:visible; overscroll-behavior-y:auto;
+        touch-action:pan-y;
       }
       .entries .empty-entries{ font-size:14px; color:var(--muted); line-height:1.5; padding:4px 2px; }
       .entry{
@@ -253,20 +264,23 @@
       .count-badge{ margin-left:auto; font-size:13.5px; font-weight:700; color:var(--muted); text-align:right; white-space:nowrap; flex:0 1 auto; }
       .count-badge strong{ color:var(--text); font-size:15px; }
       .count-badge .f{ color:var(--green); }
-      .keypad{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:14px; width:100%; touch-action:manipulation; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+      /* 키패드(빈 틈 포함)와 키는 pan-y: 세로 드래그는 브라우저가 즉시
+         페이지 스크롤로 판정하고 pointercancel로 탭을 취소한다.
+         manipulation보다 스크롤 인계가 빠르고 확실하다. */
+      .keypad{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:14px; width:100%; touch-action:pan-y; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
       .key-btn{
         min-height:58px; height:58px; max-height:64px; font-size:23px; font-weight:800; border-radius:12px;
         border:1px solid var(--line); background:var(--surface); color:var(--text);
         cursor:pointer; padding:8px 4px; -webkit-tap-highlight-color:transparent;
-        touch-action:manipulation; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+        touch-action:pan-y; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
       }
       .key-btn:active, .key-btn.pressed{ background:var(--blue-soft); border-color:var(--blue); color:var(--blue); }
       .key-btn.fresh-key{ font-size:17px; color:var(--green); border-color:var(--green); font-weight:900; }
       .key-btn.fresh-key.on{ background:var(--green); color:#fff; border-color:var(--green); }
       .key-btn.fresh-key:active, .key-btn.fresh-key.pressed{ background:var(--green); color:#fff; }
       .key-btn.del-key{ font-size:16px; font-weight:800; color:var(--muted); }
-      .count-actions{ display:grid; grid-template-columns:1fr 1.5fr; gap:8px; margin-top:10px; touch-action:manipulation; }
-      .count-actions .btn{ min-height:50px; font-size:16px; touch-action:manipulation; }
+      .count-actions{ display:grid; grid-template-columns:1fr 1.5fr; gap:8px; margin-top:10px; touch-action:pan-y; }
+      .count-actions .btn{ min-height:50px; font-size:16px; touch-action:pan-y; }
       /* 화면 고정 모드: 세는 모드 전체가 한 화면에 고정.
          높이는 브라우저 도구 모음이 떠 있는 상태의 가장 작은 높이(100svh)를 기준으로 잡는다.
          100dvh로 잡으면 도구 모음 뒤로 하단이 들어가 마지막 버튼 줄이 잘린다.
@@ -838,11 +852,13 @@
             startX = p ? p.x : 0; startY = p ? p.y : 0;
             active = true; cancelled = false;
             btn.classList.add("pressed");
-            // 포인터를 잡아 두면 버튼 밖에서 손을 떼도 up/cancel을 이 버튼이 받아
-            // 거리 판정이 끝까지 동작한다. 스크롤이 시작되면 브라우저가
-            // pointercancel을 보내므로 페이지 스크롤 자체는 막지 않는다.
+            // 마우스/펜에서만 포인터를 잡아 둔다(버튼 밖에서 손을 떼도
+            // up/cancel을 이 버튼이 받아 거리 판정이 끝까지 동작한다).
+            // 터치는 명시적으로 캡처하면 일부 브라우저(삼성 인터넷 등)가
+            // 페이지 스크롤 인계를 늦게/안 해서 스크롤이 씹힌다. 터치는
+            // 암시적 캡처만으로 up/cancel이 버튼에 오므로 따로 잡지 않는다.
             try {
-              if (ev && typeof ev.pointerId === "number" && btn.setPointerCapture) btn.setPointerCapture(ev.pointerId);
+              if (ev && ev.pointerType !== "touch" && typeof ev.pointerId === "number" && btn.setPointerCapture) btn.setPointerCapture(ev.pointerId);
             } catch(_e){}
           }
           function onMove(ev){
@@ -918,6 +934,31 @@
         bindFastTap(clearBtn, clearAllEntries);
         var tallyBtn = $("tallyBtn");
         bindFastTap(tallyBtn, tallyEntries);
+        // 입력칸 위에서 시작한 스크롤 가드: 이름칸·개수/신선칸 등 모든
+        // 입력칸에서, 누른 채 10px 넘게 끌면 스크롤 의도로 보고 포커스를
+        // 풀어 준다. 포커스된 입력칸이 화면을 끌어당기거나 키보드를 띄우며
+        // 페이지 스크롤을 씹는 일을 막기 위해서다. preventDefault는 하지
+        // 않으므로 페이지 스크롤 자체는 그대로 흘러가고, 짧게 톡 탭하면
+        // 포커스(클릭)가 정상으로 들어가 입력할 수 있다.
+        (function(){
+          var dragInput = null, dragX = 0, dragY = 0;
+          document.addEventListener("pointerdown", function(e){
+            var t = e.target;
+            if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")){
+              dragInput = t; dragX = e.clientX || 0; dragY = e.clientY || 0;
+            } else { dragInput = null; }
+          }, { passive: true });
+          document.addEventListener("pointermove", function(e){
+            if (!dragInput) return;
+            var dx = (e.clientX || 0) - dragX, dy = (e.clientY || 0) - dragY;
+            if (dx * dx + dy * dy > TAP_CANCEL_DIST_SQ){
+              if (document.activeElement === dragInput && dragInput.blur) dragInput.blur();
+              dragInput = null;
+            }
+          }, { passive: true });
+          document.addEventListener("pointerup", function(){ dragInput = null; }, { passive: true });
+          document.addEventListener("pointercancel", function(){ dragInput = null; }, { passive: true });
+        })();
         // 물리 키보드: 입력칸에 포커스가 없을 때 숫자/백스페이스/신선(F) 지원
         document.addEventListener("keydown", function(e){
           var t = e.target;
