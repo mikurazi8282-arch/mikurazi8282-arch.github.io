@@ -162,6 +162,13 @@
       .totalbar .n .fresh{ font-size:15px; color:var(--green); font-weight:700; }
       .err-msg{ display:none; margin-top:10px; color:var(--red); font-size:14px; font-weight:600; }
       .err-msg.show{ display:block; }
+      .match-warn{
+        display:none; margin:12px 0 0; padding:10px 12px; border-radius:10px;
+        background:#FFF4E0; border:1px solid #E8B04B; color:#7A4A00;
+        font-size:13.5px; font-weight:600; line-height:1.55;
+      }
+      .match-warn.show{ display:block; }
+      @media (prefers-color-scheme: dark){ .match-warn{ background:#3A2A10; border-color:#8A6A2A; color:#F2C879; } }
       .sync-msg{ margin-top:8px; font-size:12.5px; color:var(--muted); min-height:16px; }
 
       .board{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px; }
@@ -266,9 +273,23 @@
         font-size:17px; font-weight:800; letter-spacing:.06em; line-height:1;
         background:var(--surface); border:1px solid var(--line); border-radius:8px;
         padding:9px 10px; min-width:56px; text-align:center;
+        cursor:pointer; touch-action:pan-y; -webkit-tap-highlight-color:transparent;
+        -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
       }
+      .entry:active, .entry.pressed{ background:var(--blue-soft); border-color:var(--blue); }
+      .entry:focus-visible{ outline:2px solid var(--blue); outline-offset:1px; }
+      .entry .entry-del{ display:inline-block; margin-left:5px; font-size:14px; font-weight:700; color:var(--muted); vertical-align:1px; }
       .entry.fresh{ color:var(--green); border-color:var(--green); }
+      .entry.fresh .entry-del{ color:var(--green); opacity:.75; }
       .entry.fresh small{ display:block; font-size:10px; font-weight:800; letter-spacing:.08em; margin-top:4px; }
+      /* 삭제 대기 상태: 한 번 누른 칩만 빨갛게 바뀌고 '삭제'를 표시한다.
+         같은 칩을 한 번 더 눌러야 실제로 지워진다. */
+      .entry.pending-del{ background:var(--red); border-color:var(--red); color:#fff; }
+      .entry.pending-del:active, .entry.pending-del.pressed{ background:var(--red); border-color:var(--red); color:#fff; }
+      .entry.pending-del .entry-del{ color:#fff; opacity:1; font-size:12px; font-weight:800; letter-spacing:.04em; margin-left:6px; }
+      .entry.pending-del.fresh{ color:#fff; border-color:var(--red); }
+      .entry.pending-del.fresh .entry-del{ color:#fff; }
+      .entry.pending-del.fresh small{ color:#fff; }
       .current-row{
         margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);
         display:flex; align-items:center; gap:10px; flex-wrap:nowrap;
@@ -442,7 +463,7 @@
           <button type="button" class="btn danger-ghost" id="clearAllBtn">모두 지우기</button>
           <button type="button" class="btn" id="tallyBtn">정리</button>
         </div>
-        <p class="hint count-foot-hint" style="margin:10px 0 0;">정리를 누르면 구간별로 세서 아래 ‘내 장소’ 숫자에 반영되고, 방에도 자동으로 올라가요. 신선은 마지막으로 넣은 번호에 켜고 끌 수 있어요. 지우기는 입력 중인 숫자를 지우고, 입력 중이 비어 있으면 마지막 번호를 되돌려서 지워요.</p>
+        <p class="hint count-foot-hint" style="margin:10px 0 0;">정리를 누르면 구간별로 세서 아래 ‘내 장소’ 숫자에 반영되고, 방에도 자동으로 올라가요. 신선은 마지막으로 넣은 번호에 켜고 끌 수 있어요. 지우기는 입력 중인 숫자를 지우고, 입력 중이 비어 있으면 마지막 번호를 되돌려서 지워요. 번호 칩을 누르면 그 칩이 빨갛게 바뀌고, 한 번 더 누르면 중간에 있는 번호라도 그 번호 하나만 지워져요.</p>
       </section>
 
       <section class="card" aria-label="내 장소 입력">
@@ -451,6 +472,7 @@
         <label class="name-label" for="myName">장소 이름</label>
         <input type="text" id="myName" placeholder="예: 계양" autocomplete="off" />
         <div class="rows" id="rows"></div>
+        <p class="match-warn" id="matchWarn" role="alert">수정란을 고치면 위 번호 목록과 숫자가 달라져요. 목록도 같이 고쳐 주세요. 정리를 다시 누르면 목록 기준으로 덮어써져요.</p>
         <div class="totalbar">
           <span class="t">내 총 개수</span>
           <span class="n"><span id="myTotal">0</span>개 <span class="fresh" id="myFresh"></span></span>
@@ -659,6 +681,22 @@
           lsSet(LS.entries, JSON.stringify(entries));
           lsSet(LS.typing, typing);
         }
+        // 수정란 경고 상태: 아래 수정란(개수/신선)을 직접 고친 뒤에는
+        // 번호 목록과 숫자가 어긋날 수 있음을 알린다. 정리를 누르면
+        // 목록 기준으로 다시 맞춰지므로 경고는 내린다.
+        var matchWarnActive = false;
+        function updateMatchWarn(){
+          var warnEl = document.getElementById("matchWarn");
+          if (!warnEl) return;
+          var show = matchWarnActive && entries.length > 0;
+          warnEl.classList.toggle("show", !!show);
+        }
+        function noteManualEditAttempt(){
+          if (entries.length > 0){
+            matchWarnActive = true;
+            updateMatchWarn();
+          }
+        }
         function classifyRoute(n){
           if (n >= 400 && n <= 499) return 0; // 400번대 계양
           if (n >= 501 && n <= 506) return 1; // 500번대 계양
@@ -740,6 +778,8 @@
 
           cIn.addEventListener("input", function(){ onInput(i); });
           fIn.addEventListener("input", function(){ onInput(i); });
+          cIn.addEventListener("focus", noteManualEditAttempt);
+          fIn.addEventListener("focus", noteManualEditAttempt);
         });
 
         nameEl.addEventListener("input", function(){
@@ -792,6 +832,7 @@
         }
 
         function onInput(){
+          noteManualEditAttempt();
           readInputs();
           lsSet(LS.nums, JSON.stringify({ counts: myCounts, fresh: myFresh }));
           refreshMine();
@@ -817,18 +858,90 @@
         // 키패드 버튼 DOM은 한 번 만든 뒤 절대 다시 그리지 않는다.
         // 입력 때는 표시 영역(칩 목록·입력 중 숫자·총 개수)만 갱신해서,
         // 빠르게 연타해도 그리는 도중의 탭이 사라지지 않게 한다.
-        function makeEntryChip(e){
-          var chip = document.createElement("span");
-          chip.className = "entry" + (e.fresh ? " fresh" : "");
-          chip.textContent = e.code;
+        // 칩 개별 삭제는 2단계로 한다: 한 번 누르면 그 칩만 삭제 대기
+        // (빨갛게 + '삭제' 표시)가 되고, 같은 칩을 한 번 더 눌러야 지워진다.
+        // 다른 칩을 누르면 대기가 그 칩으로 옮겨가고, 키패드 입력이나
+        // 4초가 지나면 대기가 풀린다. 스치듯 눌러 지워지는 걸 막기 위해서다.
+        var pendingDeleteIdx = -1;
+        var pendingDeleteTimer = null;
+        var PENDING_DELETE_MS = 4000;
+        function refreshPendingDeleteVisual(){
+          if (!entriesBox) return;
+          var chips = entriesBox.querySelectorAll(".entry");
+          for (var i = 0; i < chips.length; i++){
+            var isPending = (i === pendingDeleteIdx);
+            chips[i].classList.toggle("pending-del", isPending);
+            var delEl = chips[i].querySelector(".entry-del");
+            if (delEl) delEl.textContent = isPending ? "삭제" : "×";
+            var e = entries[i];
+            if (e){
+              chips[i].setAttribute("aria-label", isPending
+                ? e.code + (e.fresh ? " 신선" : "") + " 삭제 대기 중, 한 번 더 누르면 지워져요"
+                : e.code + (e.fresh ? " 신선" : "") + " 지우기");
+              chips[i].title = isPending ? "한 번 더 누르면 이 번호가 지워져요" : "누르면 삭제 대기가 돼요";
+            }
+          }
+        }
+        function disarmPendingDelete(){
+          pendingDeleteIdx = -1;
+          if (pendingDeleteTimer){ clearTimeout(pendingDeleteTimer); pendingDeleteTimer = null; }
+          refreshPendingDeleteVisual();
+        }
+        function armPendingDelete(idx){
+          pendingDeleteIdx = idx;
+          if (pendingDeleteTimer) clearTimeout(pendingDeleteTimer);
+          pendingDeleteTimer = setTimeout(disarmPendingDelete, PENDING_DELETE_MS);
+          refreshPendingDeleteVisual();
+        }
+        function deleteEntryAt(idx){
+          if (idx < 0 || idx >= entries.length) return;
+          disarmClear();
+          pendingDeleteIdx = -1;
+          if (pendingDeleteTimer){ clearTimeout(pendingDeleteTimer); pendingDeleteTimer = null; }
+          var removed = entries.splice(idx, 1)[0];
+          if (entries.length === 0) matchWarnActive = false;
+          saveEntries();
+          renderEntries(true);
+          renderTyping();
+          toast(removed.code + "를 지웠어요");
+        }
+        function onEntryChipTap(idx){
+          if (idx < 0 || idx >= entries.length) return;
+          disarmClear();
+          if (pendingDeleteIdx !== idx){
+            armPendingDelete(idx);
+            toast(entries[idx].code + "를 지우려면 한 번 더 눌러주세요");
+            return;
+          }
+          deleteEntryAt(idx);
+        }
+        function makeEntryChip(e, idx){
+          var chip = document.createElement("button");
+          chip.type = "button";
+          var isPending = (idx === pendingDeleteIdx);
+          chip.className = "entry" + (e.fresh ? " fresh" : "") + (isPending ? " pending-del" : "");
+          chip.setAttribute("aria-label", isPending
+            ? e.code + (e.fresh ? " 신선" : "") + " 삭제 대기 중, 한 번 더 누르면 지워져요"
+            : e.code + (e.fresh ? " 신선" : "") + " 지우기");
+          chip.title = isPending ? "한 번 더 누르면 이 번호가 지워져요" : "누르면 삭제 대기가 돼요";
+          chip.appendChild(document.createTextNode(e.code));
+          var del = document.createElement("span");
+          del.className = "entry-del";
+          del.textContent = isPending ? "삭제" : "×";
+          del.setAttribute("aria-hidden", "true");
+          chip.appendChild(del);
           if (e.fresh){
             var sm = document.createElement("small");
             sm.textContent = "신선";
             chip.appendChild(sm);
           }
+          // 키패드와 같은 탭 판정(짧은 탭만 인정, 드래그·스크롤은 취소)을 써서
+          // 목록 스크롤이나 화면 고정 모드에서도 칩 탭이 씹히지 않게 한다.
+          bindFastTap(chip, function(){ onEntryChipTap(idx); });
           return chip;
         }
-        function renderEntries(){
+        function renderEntries(preserveScroll){
+          var prevTop = preserveScroll ? entriesBox.scrollTop : 0;
           entriesBox.innerHTML = "";
           if (!entries.length){
             var empty = document.createElement("span");
@@ -836,14 +949,21 @@
             empty.textContent = "아직 넣은 번호가 없어요. 키패드로 3자리를 눌러보세요.";
             entriesBox.appendChild(empty);
           } else {
-            entries.forEach(function(e){ entriesBox.appendChild(makeEntryChip(e)); });
+            entries.forEach(function(e, idx){ entriesBox.appendChild(makeEntryChip(e, idx)); });
           }
-          scrollEntriesToEnd();
+          if (preserveScroll){
+            entriesBox.scrollTop = prevTop;
+            if (window.requestAnimationFrame){
+              requestAnimationFrame(function(){ entriesBox.scrollTop = prevTop; });
+            }
+          } else {
+            scrollEntriesToEnd();
+          }
         }
         function appendEntryChip(e){
           var emptyEl = entriesBox.querySelector(".empty-entries");
           if (emptyEl) entriesBox.innerHTML = "";
-          entriesBox.appendChild(makeEntryChip(e));
+          entriesBox.appendChild(makeEntryChip(e, entries.length - 1));
           scrollEntriesToEnd();
         }
         function scrollEntriesToEnd(){
@@ -876,6 +996,7 @@
           }
           var lastFresh = entries.length && entries[entries.length - 1].fresh;
           if (freshBtn) freshBtn.classList.toggle("on", !!lastFresh);
+          updateMatchWarn();
         }
         function renderCounting(){
           renderEntries();
@@ -883,6 +1004,7 @@
         }
         function pressDigit(d){
           disarmClear();
+          disarmPendingDelete();
           if (typing.length >= 3) typing = "";
           typing += d;
           if (typing.length === 3){
@@ -900,6 +1022,7 @@
         }
         function pressDelete(){
           disarmClear();
+          disarmPendingDelete();
           if (typing.length){
             typing = typing.slice(0, -1);
             lsSet(LS.typing, typing);
@@ -917,6 +1040,7 @@
         }
         function toggleFresh(){
           disarmClear();
+          disarmPendingDelete();
           if (!entries.length){ toast("먼저 번호를 넣어주세요"); return; }
           var last = entries[entries.length - 1];
           last.fresh = !last.fresh;
@@ -924,7 +1048,7 @@
           // 마지막 칩만 갈아끼우고 나머지는 그대로 둔다
           var chips = entriesBox.querySelectorAll(".entry");
           var lastChip = chips[chips.length - 1];
-          if (lastChip) entriesBox.replaceChild(makeEntryChip(last), lastChip);
+          if (lastChip) entriesBox.replaceChild(makeEntryChip(last, entries.length - 1), lastChip);
           renderTyping();
         }
         // 모두 지우기 안전장치: 한 번 누르면 바로 지우지 않고
@@ -946,6 +1070,7 @@
           }
         }
         function clearAllEntries(){
+          disarmPendingDelete();
           var btn = $("clearAllBtn");
           if (!clearArmed){
             if (!entries.length && !typing){ toast("지울 번호가 없어요"); return; }
@@ -963,12 +1088,15 @@
           disarmClear();
           entries = [];
           typing = "";
+          matchWarnActive = false;
           saveEntries();
           renderCounting();
+          updateMatchWarn();
           toast("모두 지웠어요");
         }
         function tallyEntries(){
           disarmClear();
+          disarmPendingDelete();
           if (!entries.length && !typing){ toast("먼저 번호를 넣어주세요"); return; }
           if (typing.length > 0){ toast("입력 중인 " + typing + "은(는) 3자리가 아니라 정리에서 빠졌어요"); }
           var counts = [0,0,0,0,0,0], fresh = [0,0,0,0,0,0];
@@ -984,6 +1112,9 @@
             freshInputs[i].value = fresh[i] ? String(fresh[i]) : "";
           }
           lsSet(LS.nums, JSON.stringify({ counts: myCounts, fresh: myFresh }));
+          // 정리로 목록과 숫자가 다시 맞춰졌으므로 수정 경고를 내린다
+          matchWarnActive = false;
+          updateMatchWarn();
           refreshMine();
           scheduleUpload();
           renderBoard();
@@ -1258,7 +1389,13 @@
           // 정리/모두 지우기처럼 click으로 동작하는 버튼도 제외 — 키패드(pointerdown)만 막아도 줌은 차단된다
           var onClickBtn = false;
           try { onClickBtn = !!(e.target && e.target.closest && e.target.closest(".count-actions")); } catch(_e){}
-          if (isDoubleTap && !onLockBtn && !onClickBtn){
+          // 번호 칩도 제외한다: 칩을 빠르게 연달아 눌러 지우는 탭이
+          // 더블탭 줌 차단에 먹혀 두 번째 삭제가 씹히면 안 된다.
+          // 칩 삭제는 bindFastTap의 pointerup에서 이미 확정되므로,
+          // 여기서 막지 않아도 칩 쪽 탭 판정은 그대로 동작한다.
+          var onEntry = false;
+          try { onEntry = !!(e.target && e.target.closest && e.target.closest(".entry")); } catch(_e){}
+          if (isDoubleTap && !onLockBtn && !onClickBtn && !onEntry){
             if (e.cancelable) e.preventDefault();
           }
           lastTouchEndAt = now;
