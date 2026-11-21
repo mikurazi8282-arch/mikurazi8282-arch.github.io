@@ -346,6 +346,7 @@
       }
       .btn.danger-ghost{ background:var(--surface); color:var(--red); border-color:#E8B4B4; }
       @media (prefers-color-scheme: dark){ .btn.danger-ghost{ border-color:#6B3434; } }
+      .btn.danger-ghost.armed{ background:var(--red); color:#fff; border-color:var(--red); font-size:15px; }
     </style>
   </head>
   <body>
@@ -753,6 +754,7 @@
           renderTyping();
         }
         function pressDigit(d){
+          disarmClear();
           if (typing.length >= 3) typing = "";
           typing += d;
           if (typing.length === 3){
@@ -769,6 +771,7 @@
           }
         }
         function pressDelete(){
+          disarmClear();
           if (typing.length){
             typing = typing.slice(0, -1);
             lsSet(LS.typing, typing);
@@ -785,6 +788,7 @@
           }
         }
         function toggleFresh(){
+          disarmClear();
           if (!entries.length){ toast("먼저 번호를 넣어주세요"); return; }
           var last = entries[entries.length - 1];
           last.fresh = !last.fresh;
@@ -795,8 +799,40 @@
           if (lastChip) entriesBox.replaceChild(makeEntryChip(last), lastChip);
           renderTyping();
         }
+        // 모두 지우기 안전장치: 한 번 누르면 바로 지우지 않고
+        // 버튼이 "정말 지우기 (N개)"로 바뀌어 한 번 더 눌러야 지워진다.
+        // 4초 안에 다시 누르지 않으면 원래 버튼으로 돌아가고,
+        // 그 사이 다른 입력(숫자·지우기·신선·정리)을 하면 확인 상태가 풀린다.
+        // 취소하면 아무것도 바뀌지 않는다.
+        var clearArmed = false;
+        var clearArmTimer = null;
+        var CLEAR_ARM_MS = 4000;
+        function disarmClear(){
+          clearArmed = false;
+          if (clearArmTimer){ clearTimeout(clearArmTimer); clearArmTimer = null; }
+          var btn = $("clearAllBtn");
+          if (btn){
+            btn.classList.remove("armed");
+            btn.textContent = "모두 지우기";
+            btn.removeAttribute("aria-label");
+          }
+        }
         function clearAllEntries(){
-          if (!entries.length && !typing){ toast("지울 번호가 없어요"); return; }
+          var btn = $("clearAllBtn");
+          if (!clearArmed){
+            if (!entries.length && !typing){ toast("지울 번호가 없어요"); return; }
+            clearArmed = true;
+            if (btn){
+              var n = entries.length;
+              btn.classList.add("armed");
+              btn.textContent = n > 0 ? "정말 지우기 (" + n + "개)" : "정말 지우기";
+              btn.setAttribute("aria-label", n > 0 ? "정말 지우기, 입력한 " + n + "개가 모두 지워져요" : "정말 지우기");
+            }
+            clearArmTimer = setTimeout(disarmClear, CLEAR_ARM_MS);
+            return;
+          }
+          // 두 번째 탭에서만 실제로 지운다
+          disarmClear();
           entries = [];
           typing = "";
           saveEntries();
@@ -804,6 +840,7 @@
           toast("모두 지웠어요");
         }
         function tallyEntries(){
+          disarmClear();
           if (!entries.length && !typing){ toast("먼저 번호를 넣어주세요"); return; }
           if (typing.length > 0){ toast("입력 중인 " + typing + "은(는) 3자리가 아니라 정리에서 빠졌어요"); }
           var counts = [0,0,0,0,0,0], fresh = [0,0,0,0,0,0];
