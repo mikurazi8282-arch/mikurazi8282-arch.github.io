@@ -24,6 +24,8 @@
         --text:#17222E;
         --muted:#5B6B7B;
         --input-bg:#ffffff;
+        --outer-bg:#DCE6F1;
+        --phone-width:480px;
         color-scheme: light;
       }
       @media (prefers-color-scheme: dark){
@@ -36,13 +38,14 @@
           --muted:#9DB0C3;
           --blue-soft:#14304F;
           --input-bg:#10161D;
+          --outer-bg:#080D12;
           color-scheme: dark;
         }
       }
       *{ box-sizing:border-box; }
       html,body{ margin:0; padding:0; }
       body{
-        background:var(--bg);
+        background:var(--outer-bg);
         color:var(--text);
         font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
         -webkit-text-size-adjust:100%;
@@ -55,11 +58,16 @@
         color:#fff;
         padding:14px 16px calc(14px + env(safe-area-inset-bottom, 0px) * 0);
         position:sticky; top:0; z-index:20;
+        width:100%; max-width:var(--phone-width); margin:0 auto;
       }
       header h1{ margin:0; font-size:19px; font-weight:700; letter-spacing:-.02em; }
       header p{ margin:3px 0 0; font-size:13px; opacity:.88; }
 
-      main{ max-width:760px; margin:0 auto; padding:14px 14px 28px; }
+      main{ width:100%; max-width:var(--phone-width); margin:0 auto; padding:14px 14px 28px; background:var(--bg); min-height:calc(100dvh - 120px); }
+      @media (min-width:520px){
+        header{ box-shadow:0 1px 0 rgba(0,0,0,.06), 12px 0 24px -12px rgba(15,35,60,.18), -12px 0 24px -12px rgba(15,35,60,.18); }
+        main, footer{ box-shadow:12px 0 24px -12px rgba(15,35,60,.18), -12px 0 24px -12px rgba(15,35,60,.18); }
+      }
 
       .sharebar{
         display:flex; align-items:center; gap:8px; flex-wrap:wrap;
@@ -151,7 +159,7 @@
       .result-card .copyrow{ margin-top:12px; display:flex; justify-content:flex-end; }
       .empty-note{ grid-column:1 / -1; font-size:14px; color:var(--muted); text-align:center; padding:14px 4px; }
 
-      footer{ max-width:760px; margin:0 auto; padding:0 14px calc(22px + env(safe-area-inset-bottom, 0px)); }
+      footer{ width:100%; max-width:var(--phone-width); margin:0 auto; padding:0 14px calc(22px + env(safe-area-inset-bottom, 0px)); background:var(--bg); }
       footer p{ font-size:12.5px; color:var(--muted); line-height:1.6; margin:0; text-align:center; }
 
       .overlay{
@@ -176,9 +184,59 @@
         transform:translateX(-50%) translateY(20px);
         background:#17222E; color:#fff; font-size:14.5px; font-weight:600;
         padding:11px 18px; border-radius:999px; opacity:0; pointer-events:none;
-        transition:opacity .2s, transform .2s; z-index:60; max-width:88vw; text-align:center;
+        transition:opacity .2s, transform .2s; z-index:60; width:max-content; max-width:min(88vw,440px); text-align:center;
       }
       .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+      /* 세는 모드 */
+      .guide{
+        background:var(--surface-2); border:1px solid var(--line); border-radius:12px;
+        padding:10px 12px; font-size:14px; line-height:1.75; margin-bottom:12px;
+      }
+      .guide div{ display:flex; gap:8px; align-items:baseline; }
+      .guide .range{ font-weight:800; color:var(--blue); min-width:74px; letter-spacing:-.01em; }
+      .guide .gname{ font-weight:700; }
+      .display-box{
+        border:1.5px solid var(--line); border-radius:12px; background:var(--surface-2);
+        padding:12px; min-height:110px;
+      }
+      .entries{ display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start; }
+      .entries .empty-entries{ font-size:14px; color:var(--muted); line-height:1.5; padding:4px 2px; }
+      .entry{
+        font-size:17px; font-weight:800; letter-spacing:.06em; line-height:1;
+        background:var(--surface); border:1px solid var(--line); border-radius:8px;
+        padding:9px 10px; min-width:56px; text-align:center;
+      }
+      .entry.fresh{ color:var(--green); border-color:var(--green); }
+      .entry.fresh small{ display:block; font-size:10px; font-weight:800; letter-spacing:.08em; margin-top:4px; }
+      .current-row{
+        margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);
+        display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+      }
+      .current-label{ font-size:13px; font-weight:800; color:var(--muted); }
+      .current-value{
+        font-size:30px; font-weight:900; letter-spacing:.42em; color:var(--blue);
+        min-width:118px; line-height:1; font-variant-numeric:tabular-nums;
+      }
+      .current-value .dim{ color:var(--line); }
+      .count-badge{ margin-left:auto; font-size:13.5px; font-weight:700; color:var(--muted); text-align:right; }
+      .count-badge strong{ color:var(--text); font-size:15px; }
+      .count-badge .f{ color:var(--green); }
+      .keypad{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:14px; width:100%; }
+      .key-btn{
+        min-height:58px; height:58px; max-height:64px; font-size:23px; font-weight:800; border-radius:12px;
+        border:1px solid var(--line); background:var(--surface); color:var(--text);
+        cursor:pointer; padding:8px 4px; -webkit-tap-highlight-color:transparent;
+      }
+      .key-btn:active{ background:var(--blue-soft); border-color:var(--blue); color:var(--blue); }
+      .key-btn.fresh-key{ font-size:17px; color:var(--green); border-color:var(--green); font-weight:900; }
+      .key-btn.fresh-key.on{ background:var(--green); color:#fff; border-color:var(--green); }
+      .key-btn.fresh-key:active{ background:var(--green); color:#fff; }
+      .key-btn.del-key{ font-size:16px; font-weight:800; color:var(--muted); }
+      .count-actions{ display:grid; grid-template-columns:1fr 1.5fr; gap:8px; margin-top:10px; }
+      .count-actions .btn{ min-height:50px; font-size:16px; }
+      .btn.danger-ghost{ background:var(--surface); color:var(--red); border-color:#E8B4B4; }
+      @media (prefers-color-scheme: dark){ .btn.danger-ghost{ border-color:#6B3434; } }
     </style>
   </head>
   <body>
@@ -189,6 +247,49 @@
 
     <main>
       <div class="sharebar" id="sharebar"></div>
+
+      <section class="card" aria-label="세는 모드">
+        <h2>세는 모드</h2>
+        <p class="hint">앱처럼 노선 번호 3자리를 눌러서 세요. 3자리가 되면 자동으로 목록에 들어가요.</p>
+
+        <div class="guide" aria-label="구간 안내">
+          <div><span class="range">400번대</span><span class="gname">계양</span></div>
+          <div><span class="range">501~506</span><span class="gname">500번대 계양</span></div>
+          <div><span class="range">507~514</span><span class="gname">구)검단</span></div>
+          <div><span class="range">515~520</span><span class="gname">김포</span></div>
+          <div><span class="range">521~528</span><span class="gname">신)검단</span></div>
+        </div>
+
+        <div class="display-box">
+          <div class="entries" id="entriesBox" aria-live="polite"></div>
+          <div class="current-row">
+            <span class="current-label">입력 중</span>
+            <span class="current-value" id="currentValue" aria-label="지금 입력 중인 숫자"></span>
+            <span class="count-badge" id="countBadge"></span>
+          </div>
+        </div>
+
+        <div class="keypad" id="keypad" aria-label="숫자 키패드">
+          <button type="button" class="key-btn" data-digit="1">1</button>
+          <button type="button" class="key-btn" data-digit="2">2</button>
+          <button type="button" class="key-btn" data-digit="3">3</button>
+          <button type="button" class="key-btn" data-digit="4">4</button>
+          <button type="button" class="key-btn" data-digit="5">5</button>
+          <button type="button" class="key-btn" data-digit="6">6</button>
+          <button type="button" class="key-btn" data-digit="7">7</button>
+          <button type="button" class="key-btn" data-digit="8">8</button>
+          <button type="button" class="key-btn" data-digit="9">9</button>
+          <button type="button" class="key-btn fresh-key" id="freshBtn">신선</button>
+          <button type="button" class="key-btn" data-digit="0">0</button>
+          <button type="button" class="key-btn del-key" id="delBtn" aria-label="한 글자 지우기">⌫ 지우기</button>
+        </div>
+
+        <div class="count-actions">
+          <button type="button" class="btn danger-ghost" id="clearAllBtn">모두 지우기</button>
+          <button type="button" class="btn" id="tallyBtn">정리</button>
+        </div>
+        <p class="hint" style="margin:10px 0 0;">정리를 누르면 구간별로 세서 아래 ‘내 장소’ 숫자에 반영되고, 방에도 자동으로 올라가요. 신선은 마지막으로 넣은 번호에 켜고 끌 수 있어요.</p>
+      </section>
 
       <section class="card" aria-label="내 장소 입력">
         <h2>내 장소</h2>
@@ -253,7 +354,9 @@
           room: "jjaturi_room",
           device: "jjaturi_device_id",
           name: "jjaturi_my_name",
-          nums: "jjaturi_my_nums"
+          nums: "jjaturi_my_nums",
+          entries: "jjaturi_entries",
+          typing: "jjaturi_typing"
         };
 
         function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
@@ -284,6 +387,37 @@
             }
           } catch(e){}
         })();
+
+        // 세는 모드 상태: entries = [{code:"412", fresh:false}], typing = 입력 중인 숫자(최대 3자리)
+        var entries = [];
+        var typing = "";
+        (function restoreEntries(){
+          try {
+            var saved = JSON.parse(lsGet(LS.entries) || "null");
+            if (saved && saved.length){
+              saved.forEach(function(e){
+                if (!e) return;
+                var code = String(e.code != null ? e.code : (e.n != null ? e.n : "")).replace(/\D/g, "").slice(0, 3);
+                if (code.length === 3) entries.push({ code: code, fresh: !!e.fresh });
+                else if (code.length > 0) entries.push({ code: ("00" + code).slice(-3), fresh: !!e.fresh });
+              });
+            }
+            var t = String(lsGet(LS.typing) || "").replace(/\D/g, "").slice(0, 3);
+            typing = t;
+          } catch(e){}
+        })();
+        function saveEntries(){
+          lsSet(LS.entries, JSON.stringify(entries));
+          lsSet(LS.typing, typing);
+        }
+        function classifyRoute(n){
+          if (n >= 400 && n <= 499) return 0; // 400번대 계양
+          if (n >= 501 && n <= 506) return 1; // 500번대 계양
+          if (n >= 507 && n <= 514) return 2; // 구)검단
+          if (n >= 515 && n <= 520) return 3; // 김포
+          if (n >= 521 && n <= 528) return 4; // 신)검단
+          return 5; // 기타
+        }
 
         var roomCode = lsGet(LS.room) || "";
         var places = {}; // deviceId -> {name, nums[14]}
@@ -406,6 +540,128 @@
             rowEls[i].classList.toggle("err", myFresh[i] > myCounts[i]);
           }
         }
+
+        // ---------- 세는 모드 ----------
+        var entriesBox = $("entriesBox"), currentValueEl = $("currentValue"),
+            countBadgeEl = $("countBadge"), freshBtn = $("freshBtn");
+        function renderCounting(){
+          entriesBox.innerHTML = "";
+          if (!entries.length){
+            var empty = document.createElement("span");
+            empty.className = "empty-entries";
+            empty.textContent = "아직 넣은 번호가 없어요. 키패드로 3자리를 눌러보세요.";
+            entriesBox.appendChild(empty);
+          } else {
+            entries.forEach(function(e){
+              var chip = document.createElement("span");
+              chip.className = "entry" + (e.fresh ? " fresh" : "");
+              chip.textContent = e.code;
+              if (e.fresh){
+                var sm = document.createElement("small");
+                sm.textContent = "신선";
+                chip.appendChild(sm);
+              }
+              entriesBox.appendChild(chip);
+            });
+          }
+          // 입력 중 표시: 3칸 중 채워진 자리만 파랗게, 나머지는 흐리게
+          currentValueEl.innerHTML = "";
+          for (var i = 0; i < 3; i++){
+            var s = document.createElement("span");
+            if (i < typing.length){ s.textContent = typing[i]; }
+            else { s.textContent = "_"; s.className = "dim"; }
+            currentValueEl.appendChild(s);
+          }
+          var freshCount = entries.filter(function(e){ return e.fresh; }).length;
+          countBadgeEl.innerHTML = "";
+          var strong = document.createElement("strong");
+          strong.textContent = "총 " + entries.length + "개";
+          countBadgeEl.appendChild(strong);
+          if (freshCount > 0){
+            var fspan = document.createElement("span");
+            fspan.className = "f";
+            fspan.textContent = " · 신선 " + freshCount + "개";
+            countBadgeEl.appendChild(fspan);
+          }
+          var lastFresh = entries.length && entries[entries.length - 1].fresh;
+          if (freshBtn) freshBtn.classList.toggle("on", !!lastFresh);
+        }
+        function pressDigit(d){
+          if (typing.length >= 3) typing = "";
+          typing += d;
+          if (typing.length === 3){
+            entries.push({ code: typing, fresh: false });
+            typing = "";
+          }
+          saveEntries();
+          renderCounting();
+        }
+        function pressDelete(){
+          if (!typing.length) return;
+          typing = typing.slice(0, -1);
+          saveEntries();
+          renderCounting();
+        }
+        function toggleFresh(){
+          if (!entries.length){ toast("먼저 번호를 넣어주세요"); return; }
+          var last = entries[entries.length - 1];
+          last.fresh = !last.fresh;
+          saveEntries();
+          renderCounting();
+        }
+        function clearAllEntries(){
+          if (!entries.length && !typing){ toast("지울 번호가 없어요"); return; }
+          entries = [];
+          typing = "";
+          saveEntries();
+          renderCounting();
+          toast("모두 지웠어요");
+        }
+        function tallyEntries(){
+          if (!entries.length && !typing){ toast("먼저 번호를 넣어주세요"); return; }
+          if (typing.length > 0){ toast("입력 중인 " + typing + "은(는) 3자리가 아니라 정리에서 빠졌어요"); }
+          var counts = [0,0,0,0,0,0], fresh = [0,0,0,0,0,0];
+          entries.forEach(function(e){
+            var idx = classifyRoute(parseInt(e.code, 10) || 0);
+            counts[idx] += 1;
+            if (e.fresh) fresh[idx] += 1;
+          });
+          for (var i = 0; i < 6; i++){
+            myCounts[i] = counts[i];
+            myFresh[i] = fresh[i];
+            countInputs[i].value = counts[i] ? String(counts[i]) : "";
+            freshInputs[i].value = fresh[i] ? String(fresh[i]) : "";
+          }
+          lsSet(LS.nums, JSON.stringify({ counts: myCounts, fresh: myFresh }));
+          refreshMine();
+          scheduleUpload();
+          renderBoard();
+          toast("정리했어요 · 총 " + entries.length + "개");
+        }
+        var keypadEl = $("keypad");
+        if (keypadEl){
+          keypadEl.addEventListener("click", function(ev){
+            var btn = ev.target.closest ? ev.target.closest("button") : null;
+            if (!btn) return;
+            if (btn.dataset && btn.dataset.digit != null){ pressDigit(btn.dataset.digit); }
+          });
+        }
+        if (freshBtn) freshBtn.addEventListener("click", toggleFresh);
+        var delBtn = $("delBtn");
+        if (delBtn) delBtn.addEventListener("click", pressDelete);
+        var clearBtn = $("clearAllBtn");
+        if (clearBtn) clearBtn.addEventListener("click", clearAllEntries);
+        var tallyBtn = $("tallyBtn");
+        if (tallyBtn) tallyBtn.addEventListener("click", tallyEntries);
+        // 물리 키보드: 입력칸에 포커스가 없을 때 숫자/백스페이스/신선(F) 지원
+        document.addEventListener("keydown", function(e){
+          var t = e.target;
+          var tag = t && t.tagName ? t.tagName.toUpperCase() : "";
+          if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+          if (e.key >= "0" && e.key <= "9"){ pressDigit(e.key); }
+          else if (e.key === "Backspace"){ e.preventDefault(); pressDelete(); }
+        });
+        renderCounting();
 
         // ---------- 업로드 (0.5초 디바운스) ----------
         var uploadTimer = null;
