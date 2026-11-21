@@ -49,9 +49,13 @@
         color:var(--text);
         font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
         -webkit-text-size-adjust:100%;
+        touch-action:manipulation;
       }
       button, input{ font:inherit; }
       button, [role="button"], select, summary, input:not([type="checkbox"],[type="radio"]) { min-height:2.75rem; }
+      button, .btn, .key-btn{ touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+      html{ scrollbar-gutter:stable; }
+      html.locked, body.locked{ overflow:hidden !important; height:100dvh; overscroll-behavior:none; }
 
       header{
         background:var(--blue);
@@ -184,9 +188,22 @@
         transform:translateX(-50%) translateY(20px);
         background:#17222E; color:#fff; font-size:14.5px; font-weight:600;
         padding:11px 18px; border-radius:999px; opacity:0; pointer-events:none;
-        transition:opacity .2s, transform .2s; z-index:60; width:max-content; max-width:min(88vw,440px); text-align:center;
+        transition:opacity .2s, transform .2s; z-index:100; width:max-content; max-width:min(88vw,440px); text-align:center;
       }
       .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+      .name-first{
+        border:2px solid var(--blue);
+        background:var(--blue-soft);
+        margin-top:14px;
+      }
+      .name-first h2{ font-size:19px; }
+      .name-first .hint{ color:var(--text); font-size:14.5px; font-weight:600; margin-bottom:10px; }
+      .name-first input[type="text"]{
+        font-size:20px; font-weight:700; padding:14px 14px;
+        border:2px solid var(--blue); border-radius:12px; background:var(--surface);
+      }
+      .name-first .name-note{ margin:8px 0 0; font-size:12.5px; color:var(--muted); line-height:1.5; }
 
       /* 세는 모드 */
       .guide{
@@ -196,13 +213,21 @@
       .guide div{ display:flex; gap:8px; align-items:baseline; }
       .guide .range{ font-weight:800; color:var(--blue); min-width:74px; letter-spacing:-.01em; }
       .guide .gname{ font-weight:700; }
+      .count-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px; }
+      .count-head h2{ margin:0; }
+      .lock-btn{ flex:0 0 auto; min-height:40px; padding:7px 13px; font-size:14px; }
       .display-box{
         border:1.5px solid var(--line); border-radius:12px; background:var(--surface-2);
-        padding:12px; min-height:110px;
+        padding:12px; display:flex; flex-direction:column;
       }
-      .entries{ display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start; }
+      .entries{
+        display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start;
+        height:132px; min-height:84px; overflow-y:auto; overscroll-behavior:contain;
+        -webkit-overflow-scrolling:touch; scrollbar-width:thin;
+      }
       .entries .empty-entries{ font-size:14px; color:var(--muted); line-height:1.5; padding:4px 2px; }
       .entry{
+        flex:0 0 auto;
         font-size:17px; font-weight:800; letter-spacing:.06em; line-height:1;
         background:var(--surface); border:1px solid var(--line); border-radius:8px;
         padding:9px 10px; min-width:56px; text-align:center;
@@ -211,15 +236,15 @@
       .entry.fresh small{ display:block; font-size:10px; font-weight:800; letter-spacing:.08em; margin-top:4px; }
       .current-row{
         margin-top:12px; padding-top:12px; border-top:1px dashed var(--line);
-        display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+        display:flex; align-items:center; gap:10px; flex-wrap:nowrap;
       }
-      .current-label{ font-size:13px; font-weight:800; color:var(--muted); }
+      .current-label{ font-size:13px; font-weight:800; color:var(--muted); white-space:nowrap; flex:0 0 auto; }
       .current-value{
-        font-size:30px; font-weight:900; letter-spacing:.42em; color:var(--blue);
-        min-width:118px; line-height:1; font-variant-numeric:tabular-nums;
+        font-size:28px; font-weight:900; letter-spacing:.3em; color:var(--blue);
+        min-width:96px; line-height:1; font-variant-numeric:tabular-nums; flex:0 0 auto;
       }
       .current-value .dim{ color:var(--line); }
-      .count-badge{ margin-left:auto; font-size:13.5px; font-weight:700; color:var(--muted); text-align:right; }
+      .count-badge{ margin-left:auto; font-size:13.5px; font-weight:700; color:var(--muted); text-align:right; white-space:nowrap; flex:0 1 auto; }
       .count-badge strong{ color:var(--text); font-size:15px; }
       .count-badge .f{ color:var(--green); }
       .keypad{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:14px; width:100%; }
@@ -235,6 +260,33 @@
       .key-btn.del-key{ font-size:16px; font-weight:800; color:var(--muted); }
       .count-actions{ display:grid; grid-template-columns:1fr 1.5fr; gap:8px; margin-top:10px; }
       .count-actions .btn{ min-height:50px; font-size:16px; }
+      /* 화면 고정 모드: 세는 모드 전체가 한 화면(100dvh)에 고정 */
+      .count-card.locked{
+        position:fixed; top:0; left:50%; transform:translateX(-50%);
+        width:100%; max-width:var(--phone-width); height:100dvh; max-height:100dvh;
+        z-index:80; margin:0; border-radius:0; border-left:none; border-right:none;
+        display:flex; flex-direction:column; overflow:hidden;
+        padding:12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+        background:var(--surface);
+      }
+      .count-card.locked .hint{ margin-bottom:8px; }
+      .count-card.locked .guide{ flex:0 0 auto; margin-bottom:10px; padding:8px 12px; line-height:1.6; }
+      .count-card.locked .display-box{ flex:1 1 auto; min-height:176px; }
+      .count-card.locked .entries{ flex:1 1 auto; height:auto; min-height:84px; }
+      .count-card.locked .current-row{ flex:0 0 auto; }
+      @media (max-height:760px){
+        .count-card.locked .guide{ line-height:1.45; padding:6px 12px; margin-bottom:8px; }
+        .count-card.locked .key-btn{ height:48px; min-height:48px; }
+        .count-card.locked .display-box{ min-height:168px; }
+      }
+      .count-card.locked .keypad{ flex:0 0 auto; margin-top:10px; }
+      .count-card.locked .key-btn{ height:52px; min-height:52px; }
+      .count-card.locked .count-actions{ flex:0 0 auto; }
+      .count-card.locked .count-foot-hint{ display:none; }
+      @media (max-height:640px){
+        .count-card.locked .guide{ display:none; }
+        .count-card.locked .key-btn{ height:46px; min-height:46px; font-size:20px; }
+      }
       .btn.danger-ghost{ background:var(--surface); color:var(--red); border-color:#E8B4B4; }
       @media (prefers-color-scheme: dark){ .btn.danger-ghost{ border-color:#6B3434; } }
     </style>
@@ -248,9 +300,20 @@
     <main>
       <div class="sharebar" id="sharebar"></div>
 
-      <section class="card" aria-label="세는 모드">
-        <h2>세는 모드</h2>
-        <p class="hint">앱처럼 노선 번호 3자리를 눌러서 세요. 3자리가 되면 자동으로 목록에 들어가요.</p>
+      <section class="card name-first" aria-label="내 장소 이름 입력">
+        <h2>내 장소 이름</h2>
+        <p class="hint">먼저 내 장소 이름을 적어 주세요</p>
+        <label class="name-label" for="myNameTop">장소 이름</label>
+        <input type="text" id="myNameTop" placeholder="예: 인천5, 계양, 김포" autocomplete="off" />
+        <p class="name-note">이 이름으로 아래 취합 현황과 방에 표시돼요. 취합하기 전에 꼭 먼저 적어 주세요.</p>
+      </section>
+
+      <section class="card count-card" id="countCard" aria-label="세는 모드">
+        <div class="count-head">
+          <h2>세는 모드</h2>
+          <button type="button" class="btn ghost lock-btn" id="lockBtn" aria-pressed="false">화면 고정</button>
+        </div>
+        <p class="hint">앱처럼 노선 번호 3자리를 눌러서 세요. 3자리가 되면 자동으로 목록에 들어가요. 세는 동안 흔들리면 ‘화면 고정’을 눌러 한 화면에 고정하세요.</p>
 
         <div class="guide" aria-label="구간 안내">
           <div><span class="range">400번대</span><span class="gname">계양</span></div>
@@ -288,7 +351,7 @@
           <button type="button" class="btn danger-ghost" id="clearAllBtn">모두 지우기</button>
           <button type="button" class="btn" id="tallyBtn">정리</button>
         </div>
-        <p class="hint" style="margin:10px 0 0;">정리를 누르면 구간별로 세서 아래 ‘내 장소’ 숫자에 반영되고, 방에도 자동으로 올라가요. 신선은 마지막으로 넣은 번호에 켜고 끌 수 있어요.</p>
+        <p class="hint count-foot-hint" style="margin:10px 0 0;">정리를 누르면 구간별로 세서 아래 ‘내 장소’ 숫자에 반영되고, 방에도 자동으로 올라가요. 신선은 마지막으로 넣은 번호에 켜고 끌 수 있어요. 지우기는 입력 중인 숫자를 지우고, 입력 중이 비어 있으면 마지막 번호를 되돌려서 지워요.</p>
       </section>
 
       <section class="card" aria-label="내 장소 입력">
@@ -441,11 +504,12 @@
         // ---------- DOM ----------
         var $ = function(id){ return document.getElementById(id); };
         var sharebar = $("sharebar"), rowsEl = $("rows"), boardEl = $("board"),
-            nameEl = $("myName"), totalEl = $("myTotal"), freshEl = $("myFresh"),
+            nameEl = $("myName"), nameTopEl = $("myNameTop"), totalEl = $("myTotal"), freshEl = $("myFresh"),
             errEl = $("errMsg"), syncEl = $("syncMsg"), boardHint = $("boardHint"),
             toastEl = $("toast");
 
         nameEl.value = lsGet(LS.name) || "";
+        if (nameTopEl) nameTopEl.value = nameEl.value;
 
         var toastTimer = null;
         function toast(msg){
@@ -493,10 +557,20 @@
         });
 
         nameEl.addEventListener("input", function(){
+          if (nameTopEl && nameTopEl.value !== nameEl.value) nameTopEl.value = nameEl.value;
           lsSet(LS.name, nameEl.value);
           scheduleUpload();
           renderBoard();
         });
+
+        if (nameTopEl){
+          nameTopEl.addEventListener("input", function(){
+            if (nameEl.value !== nameTopEl.value) nameEl.value = nameTopEl.value;
+            lsSet(LS.name, nameTopEl.value);
+            scheduleUpload();
+            renderBoard();
+          });
+        }
 
         function readInputs(){
           for (var i = 0; i < 6; i++){
@@ -585,6 +659,12 @@
           }
           var lastFresh = entries.length && entries[entries.length - 1].fresh;
           if (freshBtn) freshBtn.classList.toggle("on", !!lastFresh);
+          // 목록은 상자 안에서만 스크롤: 레이아웃이 확정된 뒤 최신 번호가 보이게 내리고, 키패드 위치는 그대로 둔다
+          if (window.requestAnimationFrame){
+            requestAnimationFrame(function(){ entriesBox.scrollTop = entriesBox.scrollHeight; });
+          } else {
+            entriesBox.scrollTop = entriesBox.scrollHeight;
+          }
         }
         function pressDigit(d){
           if (typing.length >= 3) typing = "";
@@ -597,8 +677,15 @@
           renderCounting();
         }
         function pressDelete(){
-          if (!typing.length) return;
-          typing = typing.slice(0, -1);
+          if (typing.length){
+            typing = typing.slice(0, -1);
+          } else if (entries.length){
+            // 입력 중이 비어 있으면 마지막으로 넣은 번호를 되돌려서 한 자리 지운다
+            var last = entries.pop();
+            typing = last.code.slice(0, -1);
+          } else {
+            return;
+          }
           saveEntries();
           renderCounting();
         }
@@ -662,6 +749,44 @@
           else if (e.key === "Backspace"){ e.preventDefault(); pressDelete(); }
         });
         renderCounting();
+
+        // ---------- 화면 고정 (폰 앱처럼 한 화면에 고정 / 해제) ----------
+        var countCard = $("countCard"), lockBtn = $("lockBtn");
+        var isLocked = false, savedScrollY = 0;
+        function setLocked(on){
+          isLocked = on;
+          if (on){
+            savedScrollY = window.scrollY || window.pageYOffset || 0;
+            countCard.classList.add("locked");
+            document.documentElement.classList.add("locked");
+            document.body.classList.add("locked");
+            lockBtn.textContent = "고정 풀기";
+            lockBtn.setAttribute("aria-pressed", "true");
+            if (window.requestAnimationFrame){
+              requestAnimationFrame(function(){ entriesBox.scrollTop = entriesBox.scrollHeight; });
+            } else {
+              entriesBox.scrollTop = entriesBox.scrollHeight;
+            }
+          } else {
+            countCard.classList.remove("locked");
+            document.documentElement.classList.remove("locked");
+            document.body.classList.remove("locked");
+            lockBtn.textContent = "화면 고정";
+            lockBtn.setAttribute("aria-pressed", "false");
+            window.scrollTo(0, savedScrollY);
+          }
+        }
+        if (lockBtn && countCard){
+          lockBtn.addEventListener("click", function(){ setLocked(!isLocked); });
+        }
+        document.addEventListener("keydown", function(e){
+          if (e.key === "Escape" && isLocked) setLocked(false);
+        });
+        // 버튼이 포커스를 받으면서 브라우저가 화면을 끌어올리는 것 방지 (클릭 동작은 유지)
+        var noFocusJump = document.querySelectorAll(".key-btn, .count-actions .btn, .lock-btn");
+        for (var nf = 0; nf < noFocusJump.length; nf++){
+          noFocusJump[nf].addEventListener("mousedown", function(e){ e.preventDefault(); });
+        }
 
         // ---------- 업로드 (0.5초 디바운스) ----------
         var uploadTimer = null;
