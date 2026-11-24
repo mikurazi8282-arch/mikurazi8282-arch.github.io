@@ -182,7 +182,8 @@
       .pcard .ptotal small{ font-size:13px; font-weight:700; }
       .pcard .pfresh{ font-size:13px; color:var(--green); font-weight:700; }
       .pcard ul{ list-style:none; margin:6px 0 0; padding:0; font-size:13px; color:var(--muted); line-height:1.55; }
-      .pcard.mine{ border-color:var(--blue); }
+      .pcard.mine{ border:2.5px solid var(--blue); background:var(--blue-soft); }
+      .pcard .place-copy-btn{ margin-top:10px; width:100%; }
       .pcard .tag{ display:inline-block; font-size:11px; font-weight:700; color:var(--blue); background:var(--blue-soft); border-radius:999px; padding:2px 8px; margin-left:6px; vertical-align:2px; }
 
       .result-card{
@@ -417,7 +418,7 @@
         <p class="hint">먼저 내 장소 이름을 적어 주세요</p>
         <label class="name-label" for="myNameTop">장소 이름</label>
         <input type="text" id="myNameTop" placeholder="예: 인천5, 계양, 김포" autocomplete="off" />
-        <p class="name-note">아래에서는 내곳-이 이름으로 표시돼요. 취합하기 전에 꼭 먼저 적어 주세요.</p>
+        <p class="name-note">취합에서는 이 이름으로 표시돼요. 취합하기 전에 꼭 먼저 적어 주세요.</p>
       </section>
 
       <section class="card count-card" id="countCard" aria-label="세는 모드">
@@ -467,7 +468,7 @@
       </section>
 
       <section class="card" aria-label="내 장소 입력">
-        <h2 id="myPlaceTitle">내곳</h2>
+        <h2 id="myPlaceTitle">내 장소</h2>
         <p class="hint">숫자를 넣으면 방에 자동으로 올라가요. 신선은 개수보다 클 수 없어요.</p>
         <label class="name-label" for="myName">장소 이름</label>
         <input type="text" id="myName" placeholder="예: 계양" autocomplete="off" />
@@ -475,7 +476,7 @@
         <p class="match-warn" id="matchWarn" role="alert">수정란을 고치면 위 번호 목록과 숫자가 달라져요. 목록도 같이 고쳐 주세요. 정리를 다시 누르면 목록 기준으로 덮어써져요.</p>
         <div class="totalbar">
           <span class="t">내 총 개수</span>
-          <span class="n"><span id="myTotal">0</span>개 <span class="fresh" id="myFresh"></span></span>
+          <span class="n"><span id="myTotal">0</span>건 <span class="fresh" id="myFresh"></span></span>
         </div>
         <p class="err-msg" id="errMsg">신선이 개수보다 많은 구간이 있어요. 고쳐야 방에 올라가요.</p>
         <p class="sync-msg" id="syncMsg"></p>
@@ -537,8 +538,10 @@
           { label:"구)검단",             short:"구)검단",   copy:"구)검단",      sub:"507~514" },
           { label:"김포",                short:"김포",      copy:"김포",         sub:"515~520" },
           { label:"신)검단",             short:"신)검단",   copy:"신)검단",      sub:"521~528" },
-          { label:"기타",                short:"기타",      copy:"기타" }
+          { label:"주간건",              short:"주간건",    copy:"주간건" }
         ];
+        // 한 줄 복사 양식에서 쓰는 구간 이름 (예: "400계양 신선 1건 던 9건")
+        var LINE_LABELS = ["400계양", "500계양", "구검단", "김포", "신검단", "주간"];
         // nums 14개 순서: [총, 400, 500, 구검단, 김포, 신검단, 신선합계, 기타, 400신선, 500신선, 구검단신선, 김포신선, 신검단신선, 기타신선]
         // 입력 인덱스(0~5: 400,500,구검단,김포,신검단,기타) → nums 위치
         var COUNT_POS = [1, 2, 3, 4, 5, 7];
@@ -824,7 +827,7 @@
 
         function myDisplayName(){
           var raw = (nameEl && nameEl.value ? nameEl.value : "").trim();
-          return raw ? "내곳-" + raw : "내곳";
+          return raw ? raw : "내 장소";
         }
         function updateMyPlaceTitle(){
           var titleEl = $("myPlaceTitle");
@@ -845,7 +848,7 @@
           var err = hasError();
           totalEl.textContent = myTotal();
           var ft = myFreshTotal();
-          freshEl.textContent = ft > 0 ? "· 신선 " + ft + "개 포함" : "";
+          freshEl.textContent = ft > 0 ? "· 신선 " + ft + "건 포함" : "";
           errEl.classList.toggle("show", err);
           for (var i = 0; i < 6; i++){
             rowEls[i].classList.toggle("err", myFresh[i] > myCounts[i]);
@@ -986,12 +989,12 @@
           for (var j = 0; j < entries.length; j++) if (entries[j].fresh) freshCount++;
           countBadgeEl.innerHTML = "";
           var strong = document.createElement("strong");
-          strong.textContent = "총 " + entries.length + "개";
+          strong.textContent = "총 " + entries.length + "건";
           countBadgeEl.appendChild(strong);
           if (freshCount > 0){
             var fspan = document.createElement("span");
             fspan.className = "f";
-            fspan.textContent = " · 신선 " + freshCount + "개";
+            fspan.textContent = " · 신선 " + freshCount + "건";
             countBadgeEl.appendChild(fspan);
           }
           var lastFresh = entries.length && entries[entries.length - 1].fresh;
@@ -1078,8 +1081,8 @@
             if (btn){
               var n = entries.length;
               btn.classList.add("armed");
-              btn.textContent = n > 0 ? "정말 지우기 (" + n + "개)" : "정말 지우기";
-              btn.setAttribute("aria-label", n > 0 ? "정말 지우기, 입력한 " + n + "개가 모두 지워져요" : "정말 지우기");
+              btn.textContent = n > 0 ? "정말 지우기 (" + n + "건)" : "정말 지우기";
+              btn.setAttribute("aria-label", n > 0 ? "정말 지우기, 입력한 " + n + "건이 모두 지워져요" : "정말 지우기");
             }
             clearArmTimer = setTimeout(disarmClear, CLEAR_ARM_MS);
             return;
@@ -1118,7 +1121,7 @@
           refreshMine();
           scheduleUpload();
           renderBoard();
-          toast("정리했어요 · 총 " + entries.length + "개");
+          toast("정리했어요 · 총 " + entries.length + "건");
         }
         // 키 입력은 pointerdown이 아니라 pointerup에서 확정한다.
         // pointerdown에서는 눌림 표시만 주고, 손가락이 약 10px 이상 움직이거나
@@ -1607,9 +1610,26 @@
           var items = [];
           for (var i = 0; i < 6; i++){
             var c = nums[COUNT_POS[i]], f = nums[FRESH_POS[i]];
-            if (c > 0) items.push(SECTIONS[i].short + " " + c + (f > 0 ? " (신선 " + f + ")" : ""));
+            if (c > 0) items.push(SECTIONS[i].short + " " + c + "건" + (f > 0 ? " (신선 " + f + "건)" : ""));
           }
           return items;
+        }
+
+        // 취합 카드 제목용: 내 장소는 "내곳-" 접두사 없이 장소 이름만 보여준다.
+        // (방에 올리는 이름 데이터는 그대로 두고 화면 표시만 바꾼다)
+        function myPlaceNameOnly(){
+          var raw = (nameEl && nameEl.value ? nameEl.value : "").trim();
+          return raw ? raw : "내 장소";
+        }
+
+        function makePlaceCopyButton(nums){
+          var snapshot = nums.slice();
+          var btn = document.createElement("button");
+          btn.className = "btn plain small place-copy-btn";
+          btn.type = "button";
+          btn.textContent = "복사하기";
+          btn.addEventListener("click", function(){ copyText(formatCopyLine(snapshot)); });
+          return btn;
         }
 
         function renderBoard(){
@@ -1624,21 +1644,21 @@
           var mineNums = mineInRoom ? places[myPlaceKey].nums : myNums14();
           allNums.push(mineNums);
 
-          // 내 장소 카드 — 표시는 "내곳-이름" (이름이 없으면 "내곳")
+          // 내 장소 카드 — 표시는 장소 이름만 ("내곳-" 접두사 없이), 테두리로 내 장소를 구분
           (function(){
             var card = document.createElement("div");
             card.className = "pcard mine";
             var nm = document.createElement("div");
             nm.className = "pname";
-            nm.textContent = myDisplayName();
+            nm.textContent = myPlaceNameOnly();
             var tt = document.createElement("div");
             tt.className = "ptotal";
-            tt.textContent = mineNums[0] + "개";
+            tt.textContent = mineNums[0] + "건";
             card.appendChild(nm); card.appendChild(tt);
             if (mineNums[6] > 0){
               var fr = document.createElement("div");
               fr.className = "pfresh";
-              fr.textContent = "신선 " + mineNums[6] + "개 포함";
+              fr.textContent = "신선 " + mineNums[6] + "건 포함";
               card.appendChild(fr);
             }
             var items = placeSummaryList(mineNums);
@@ -1651,6 +1671,7 @@
               });
               card.appendChild(ul);
             }
+            card.appendChild(makePlaceCopyButton(mineNums));
             boardEl.appendChild(card);
           })();
 
@@ -1663,12 +1684,12 @@
             nm.textContent = p.name || "이름 없는 장소";
             var tt = document.createElement("div");
             tt.className = "ptotal";
-            tt.textContent = p.nums[0] + "개";
+            tt.textContent = p.nums[0] + "건";
             card.appendChild(nm); card.appendChild(tt);
             if (p.nums[6] > 0){
               var fr = document.createElement("div");
               fr.className = "pfresh";
-              fr.textContent = "신선 " + p.nums[6] + "개 포함";
+              fr.textContent = "신선 " + p.nums[6] + "건 포함";
               card.appendChild(fr);
             }
             var items = placeSummaryList(p.nums);
@@ -1681,6 +1702,7 @@
               });
               card.appendChild(ul);
             }
+            card.appendChild(makePlaceCopyButton(p.nums));
             boardEl.appendChild(card);
           });
 
@@ -1706,7 +1728,7 @@
           row.className = "copyrow";
           var cb = document.createElement("button");
           cb.className = "btn small"; cb.type = "button"; cb.textContent = "복사";
-          cb.addEventListener("click", function(){ copyText(formatResult(sum)); });
+          cb.addEventListener("click", function(){ copyText(formatCopyLine(sum)); });
           row.appendChild(cb);
           rc.appendChild(h); rc.appendChild(pre); rc.appendChild(row);
           boardEl.appendChild(rc);
@@ -1722,12 +1744,12 @@
         }
         function formatResult(n){
           var lines = [];
-          lines.push("총 짜투리 개수 " + n[0] + "개");
+          lines.push("총 짜투리 개수 " + n[0] + "건");
           var parts = [];
           var maxW = 0;
           for (var i = 0; i < 6; i++){
             var c = n[COUNT_POS[i]], f = n[FRESH_POS[i]];
-            var left = SECTIONS[i].copy + (f > 0 ? " - 신선 " + f + "개 포함" : "");
+            var left = SECTIONS[i].copy + (f > 0 ? " - 신선 " + f + "건 포함" : "");
             parts.push({ left: left, count: c });
             var w = dispWidth(left);
             if (w > maxW) maxW = w;
@@ -1736,9 +1758,47 @@
             var pad = "";
             var need = maxW - dispWidth(p.left);
             for (var j = 0; j < need; j++) pad += " ";
-            lines.push(p.left + pad + "  " + p.count + "개");
+            lines.push(p.left + pad + "  " + p.count + "건");
           });
-          lines.push("신선 " + n[6] + "개");
+          lines.push("신선 " + n[6] + "건");
+          return lines.join("\n");
+        }
+
+        // 복사 양식 (앱 기본 양식): 첫 줄에 총 개수를 쓰고,
+        // 구간마다 한 줄씩 정렬한다. 구간 이름은 표시 너비 기준으로
+        // 가장 긴 이름에 맞춰 공백으로 정렬하고, 0인 구간은 생략한다.
+        // 전부 0이면 "총 짜투리 개수 0건" 한 줄만 반환한다.
+        function formatCopyLine(n){
+          var rows = [];
+          var total = 0;
+          for (var i = 0; i < 6; i++){
+            var c = n[COUNT_POS[i]] || 0, f = n[FRESH_POS[i]] || 0;
+            if (c <= 0) continue;
+            total += c;
+            var rest = c - f;
+            if (rest < 0) rest = 0;
+            var parts = [];
+            if (f > 0) parts.push("신선 " + f + "건");
+            if (rest > 0) parts.push("던 " + rest + "건");
+            rows.push({ label: LINE_LABELS[i], content: parts.join(" ") });
+          }
+          // n[0]이 있으면 그 값을 우선하되, 없으면 합산으로 대체
+          var totalVal = (typeof n[0] === "number" && n[0] >= 0) ? n[0] : total;
+          // rows가 있을 때는 합산과 n[0] 중 합산이 정확하므로 합산 사용
+          if (rows.length) totalVal = total;
+          var lines = ["총 짜투리 개수 " + totalVal + "건"];
+          if (!rows.length) return lines[0];
+          var maxW = 0;
+          rows.forEach(function(r){
+            var w = dispWidth(r.label);
+            if (w > maxW) maxW = w;
+          });
+          rows.forEach(function(r){
+            var pad = "";
+            var need = maxW - dispWidth(r.label);
+            for (var j = 0; j < need; j++) pad += " ";
+            lines.push(r.label + pad + " " + r.content);
+          });
           return lines.join("\n");
         }
 
